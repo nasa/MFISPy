@@ -5,7 +5,11 @@ from scipy.stats import multivariate_normal
 class BiasingDist:
     def __init__(self):
         self.n_components = 3
-        
+    
+    def _validate_inputs(self, input):
+        if not input in [float, int]:
+            raise ValueError("Not numeric")
+    
     def train(self, Z, max_clusters):
         best_gmm = self._lowest_bic_gmm(Z, max_clusters = 10)
                 

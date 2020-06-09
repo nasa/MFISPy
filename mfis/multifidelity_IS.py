@@ -9,6 +9,7 @@ class multiIS:
         q_zp = q_dist.density(z_p)
 
         return p_zp/q_zp
+
     
     def mfip_estimate(self, z_p, high_fidelity_Y, p_dist, q_dist):
         z_p_fail = z_p[high_fidelity_Y < self.fail_thresh,:]
