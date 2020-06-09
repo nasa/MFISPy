@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from mfis.uniform_distribution import IndependentUniformDistribution
+from mfis import IndependentUniformDistribution
 
 
 @pytest.mark.parametrize("bounds,num_samples",[([[0,1]], 5),
@@ -38,14 +38,36 @@ def test_same_seed_gives_same_samples():
     np.testing.assert_array_equal(samples_v1,
                                   samples_v2)
 
+def test_different_seeds_give_different_samples():
+
+    bounds = [[0,1]]
+    num_samples = 10
+    seed = 1
+    uniform_v1 = IndependentUniformDistribution(bounds, seed)
+    samples_v1 = uniform_v1.draw_samples(num_samples)
+    seed = 2
+    uniform_v2 = IndependentUniformDistribution(bounds, seed)
+    samples_v2 = uniform_v2.draw_samples(num_samples)
+
+    assert not np.array_equal(samples_v1, samples_v2)
+
 def test_evaluate_pdf():
 
     bounds = [[0,1],[2,3],[3,5]]
     uniform = IndependentUniformDistribution(bounds)
     samples = np.array([[1,2,3]])
 
-    expected_pdf = np.array([0.5])
+    expected_pdf = np.array([[0.5]])
     np.testing.assert_almost_equal(expected_pdf, uniform.evaluate_pdf(samples))
+    
+def test_evaluate_pdf_valid_probability():
 
+    bounds = [[0,1],[2,3],[3,5]]
+    uniform = IndependentUniformDistribution(bounds)
+    samples = np.array([[1,2,3]])
+
+    pdf_samples = uniform.evaluate_pdf(samples)
+    assert pdf_samples <= 1
+    assert pdf_samples >= 0
     
 
