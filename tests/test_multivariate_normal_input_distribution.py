@@ -78,5 +78,3 @@ def test_evaluate_pdf_valid_probability():
     pdf_samples = mvn.evaluate_pdf(samples)
     assert pdf_samples <= 1
     assert pdf_samples >= 0
-    
-
