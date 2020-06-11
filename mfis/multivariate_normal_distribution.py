@@ -6,9 +6,9 @@ Created on Wed Jun 10 11:26:19 2020
 
 import numpy as np
 from scipy.stats import multivariate_normal
-#from .input_distribution import InputDistribution
+from .input_distribution import InputDistribution
 
-class MultivariateNormalDistribution():
+class MultivariateNormalDistribution(InputDistribution):
 
     def __init__(self, mean, cov, seed=None):
         self._mean = mean

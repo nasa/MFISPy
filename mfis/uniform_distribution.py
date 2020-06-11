@@ -1,7 +1,7 @@
 import numpy as np
-#from input_distribution import InputDistribution
+from .input_distribution import InputDistribution
 
-class IndependentUniformDistribution():
+class IndependentUniformDistribution(InputDistribution):
 
     def __init__(self, bounds, seed=None):
         self._bounds = bounds
