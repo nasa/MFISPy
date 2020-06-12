@@ -2,67 +2,80 @@ import numpy as np
 from sklearn.mixture import GaussianMixture
 from scipy.stats import multivariate_normal
 from mfis.input_distribution import InputDistribution
-import h5py
+from inspect import isfunction
+import pickle
 
 class BiasingDist:
-    def __init__(self, trained_surrogate, threshold, 
-                 input_distribution = None, input_samples = None, seed = None):
+    def __init__(self, trained_surrogate, limit_state = None, 
+                 input_distribution = None, seed = None):
         self._surrogate = trained_surrogate
-        self._threshold = threshold
-        if hasattr(self,'input_distribution'):
+        if limit_state is not None:
+            self._limit_state = limit_state
+        if input_distribution is not None:
             if issubclass(input_distribution, InputDistribution):
-                self._input_distribution = input_distribution
-        elif isinstance(input_samples, np.ndarray):
-            self._input_samples = input_samples
+                self.input_distribution = input_distribution
+        self._surrogate_inputs = None      
         if seed is not None:
             np.random.seed(seed)
 
+    def __eq__(self, other): 
+        if not isinstance(other, BiasingDist):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
     
-    def train(self, num_input_samples, max_clusters = 10, covar_type = 'full'):
-        failure_inputs = self._surrogate_failures(num_input_samples)
-        if len(failure_inputs > 0):
-            self.train_mixture_model(failure_inputs, max_clusters, covar_type)
-
+    def fit(self, N, max_clusters = 10, covariance_type = 'full'):
+        failure_inputs = []
+        max_attempts = 10; attempts = 1
+        while (len(failure_inputs) == 0 and attempts <= max_attempts):
+            failure_inputs = self.get_surrogate_failed_inputs(N)
+            attempts = attempts + 1
+        
+        if len(failure_inputs) > 0:
+            self.fit_from_failed_inputs(failure_inputs, max_clusters, 
+                                         covariance_type)
+        else:
+            raise ValueError(f"No failures found in 10*{N} surrogate draws")
     
-    def _surrogate_failures(self, num_input_samples):
-         surrogate_predictions = self._evaluate_surrogate(num_input_samples)
-         failure_inputs = self._find_failures(self._input_samples,
+    def get_surrogate_failed_inputs(self, N):
+         surrogate_predictions = self._evaluate_surrogate(N)
+         failure_inputs = self._find_failures(self._surrogate_inputs,
                                                  surrogate_predictions)
          return failure_inputs
     
     
-    def _evaluate_surrogate(self, num_input_samples):
+    def _evaluate_surrogate(self, N):
         if hasattr(self, '_input_distribution'):
-            self._input_samples = self.input_distribution. \
-                draw_samples(num_input_samples)
+            self._surrogate_inputs = self.input_distribution.draw_samples(N)
+        surrogate_predictions = self._surrogate.predict(self._surrogate_inputs)
         
-        return self._surrogate.predict(self._input_samples)
+        return surrogate_predictions
     
     
     def _find_failures(self, inputs, outputs):
-        failure_indexes = outputs < self._threshold
+        if isfunction(self._limit_state):
+            failure_indexes = self._limit_state(outputs) < 0
+        else:
+            failure_indexes = outputs < self._limit_state
+            
         failure_inputs = inputs[failure_indexes.flatten(),:]
     
         return(failure_inputs)
     
     
-    def train_mixture_model(self, train_data, max_clusters = 10, 
-                           covar_type = 'full'): 
-        self._gmm = self._lowest_bic_gmm(train_data, max_clusters, covar_type)
+    def fit_from_failed_inputs(self, train_data, max_clusters = 10, 
+                           covariance_type = 'full'): 
+        self._gmm = self._lowest_bic_gmm(train_data, max_clusters, 
+                                         covariance_type)
         
-        self.n_components = self._gmm.n_components
-        self.covariance_type = self._gmm.covariance_type
-        self.covariances_ = self._gmm.covariances_
-        self.means_ = self._gmm.means_
-        self.weights_ = self._gmm.weights_
+        self.__dict__.update(self._gmm.__dict__.copy()) 
+
     
-    
-    def _lowest_bic_gmm(self, train_data, max_clusters, covar_type):
+    def _lowest_bic_gmm(self, train_data, max_clusters, covariance_type):
         lowest_bic = np.infty 
         
         for n_components in range(1,max_clusters):
             mixmodel = GaussianMixture(n_components, 
-                                       covariance_type = covar_type)
+                                       covariance_type = covariance_type)
             mixmodel.fit(train_data)
             if mixmodel.bic(train_data) < lowest_bic:
                 lowest_bic = mixmodel.bic(train_data)
@@ -92,7 +105,7 @@ class BiasingDist:
         densities_unweighted = np.zeros((samples.shape[0],self.n_components))
     
         for i in range(self.n_components):
-            densities_unweighted[:,i] = self._cluster_pdf(self, samples, i)
+           densities_unweighted[:,i] = self._cluster_pdf(self, samples, i)
              
         samples_densities = np.dot(densities_unweighted, self.weights_)
         
@@ -118,9 +131,11 @@ class BiasingDist:
         return covariance
             
 
-    def write_to_file(path, samples, sample_densities):
-        with h5py.File(path, 'w') as fObj:
-            exp_model_group = fObj.create_group("Biasing_Distribution_Samples")
-            exp_model_group.create_dataset("samples", data=samples)
-            exp_model_group.create_dataset("densities", data=sample_densities)
-
+    def save(self, filename):
+        with open(filename, 'wb')as fObj: 
+            pickle.dump(self.__dict__, fObj)
+    
+    
+    def load(self, filename):
+        with open(filename, 'rb') as fObj: 
+            self.__dict__.update(pickle.load(fObj))
