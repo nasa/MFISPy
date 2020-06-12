@@ -1,19 +1,45 @@
 import numpy as np
+from mfis.input_distribution import InputDistribution
+from inspect import isfunction
+
 
 class multiIS:
-    def  __init__(self):
-       self.fail_thresh = .439
-            
-    def calc_importance_weights(z_p, p_dist, q_dist):
-        p_zp = p_dist(z_p)
-        q_zp = q_dist.density(z_p)
+    def  __init__(self, limit_state = None, biasing_distribution = None,
+                  input_distribution = None):
+       if limit_state is not None:
+            self._limit_state = limit_state
+       if biasing_distribution is not None:
+           if issubclass(biasing_distribution, InputDistribution):
+               self.biasing_distribution = biasing_distribution
+       if input_distribution is not None:
+            if issubclass(input_distribution, InputDistribution):
+                self.input_distribution = input_distribution
+                
+                
+    def calc_importance_weights(self, failure_inputs):
+        input_prob = self.input_distribution.evaluate_pdf(failure_inputs)
+        mm_prob = self.biasing_distribution.evaluate_pdf(failure_inputs)
 
-        return p_zp/q_zp
+        return input_prob/mm_prob
 
     
-    def mfip_estimate(self, z_p, high_fidelity_Y, p_dist, q_dist):
-        z_p_fail = z_p[high_fidelity_Y < self.fail_thresh,:]
-        importance_weights = self.calc_importance_weights(z_p_fail, 
-                                                          p_dist, q_dist)
-        
-        return np.sum(importance_weights)/z_p.shape[0]
+    def mfip_estimate(self, high_fidelity_inputs, high_fidelity_outputs):
+        failure_inputs = self._find_failures(high_fidelity_inputs, 
+                                       high_fidelity_outputs)
+        if len(failure_inputs) > 0:
+            importance_weights = self.calc_importance_weights(failure_inputs)
+        else: 
+            raise ValueError("No failures found in data supplied.")
+            
+        return np.sum(importance_weights)/len(failure_inputs)
+    
+    
+    def _find_failures(self, inputs, outputs):
+        if isfunction(self._limit_state):
+            failure_indexes = self._limit_state(outputs) < 0
+        else:
+            failure_indexes = outputs < self._limit_state
+            
+        failure_inputs = inputs[failure_indexes.flatten(),:]
+    
+        return failure_inputs
