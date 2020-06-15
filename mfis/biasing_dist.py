@@ -5,14 +5,14 @@ from mfis.input_distribution import InputDistribution
 from inspect import isfunction
 import pickle
 
-class BiasingDist:
+class BiasingDist(InputDistribution):
     def __init__(self, trained_surrogate, limit_state = None, 
                  input_distribution = None, seed = None):
         self._surrogate = trained_surrogate
         if limit_state is not None:
             self._limit_state = limit_state
         if input_distribution is not None:
-            if issubclass(input_distribution, InputDistribution):
+            if isinstance(input_distribution, InputDistribution):
                 self.input_distribution = input_distribution
         self._surrogate_inputs = None      
         if seed is not None:
@@ -97,7 +97,7 @@ class BiasingDist:
     def evaluate_pdf(self, samples):
         if hasattr(self, '_gmm'):
             samples_densities = self.evaluate_mixture_model_pdf(samples)
-        elif hasattr(self, '_input_distribution'):
+        elif hasattr(self, 'input_distribution'):
             samples_densities = self.input_distribution.evaluate_pdf(samples)
         else: 
             raise ValueError("No mixture model or input distribution exists.")
@@ -106,33 +106,10 @@ class BiasingDist:
 
 
     def evaluate_mixture_model_pdf(self, samples):
-        densities_unweighted = np.zeros((samples.shape[0],self.n_components))
-    
-        for i in range(self.n_components):
-           densities_unweighted[:,i] = self._cluster_pdf(self, samples, i)
-             
-        samples_densities = np.dot(densities_unweighted, self.weights_)
+        log_densities = self._gmm.score_samples(samples)
+        samples_densities = np.exp(log_densities)
         
-        return(samples_densities)
-
-
-    def _cluster_pdf(self, samples, cluster_num):
-        cluster_covariance = self._get_cluster_covariance(self, cluster_num)
-        
-        densities_for_clust = multivariate_normal.pdf(samples, 
-                                mean = self.means_[cluster_num], 
-                                cov = cluster_covariance)
-        
-        return densities_for_clust
-
-    
-    def _get_cluster_covariance(self, cluster_num):
-        if self.covariance_type =='tied':
-            covariance = self.covariances_
-        else:
-            covariance = self.covariances_[cluster_num] 
-        
-        return covariance
+        return samples_densities
             
 
     def save(self, filename):

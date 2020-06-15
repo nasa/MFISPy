@@ -8,11 +8,12 @@ class multiIS:
                   input_distribution = None):
        if limit_state is not None:
             self._limit_state = limit_state
+       import pdb; pdb.set_trace()
        if biasing_distribution is not None:
-           if issubclass(biasing_distribution, InputDistribution):
+           if isinstance(biasing_distribution, InputDistribution):
                self.biasing_distribution = biasing_distribution
        if input_distribution is not None:
-           if issubclass(input_distribution, InputDistribution):
+           if isinstance(input_distribution, InputDistribution):
                self.input_distribution = input_distribution
                 
                 

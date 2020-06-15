@@ -176,33 +176,6 @@ def test_number_of_predictions_from_evaluate_surrogate():
     surrogate_predictions = bd._evaluate_surrogate(num_input_samples)
     
     assert num_input_samples == len(surrogate_predictions)
-
-    
-@pytest.mark.parametrize("cov_type, covariances, clust_covariance",
-                          [('tied',np.array([[2, .4],[.4, 3]]), 
-                            np.array([[2, .4],[.4, 3]])),
-                           ('full',np.array([[[2, .4],[.4, 3]],
-                                             [[1, .3],[.3, 1.5]]]), 
-                            np.array([[1, .3],[.3, 1.5]])),
-                           ('diag',np.array([[2,.4],[.5,3]]), 
-                            np.array([.5,3]))])
-def test_shape_get_cluster_covariance(cov_type, covariances, clust_covariance):
-    mock_surrogate = Mock()
-    bd = BiasingDist(trained_surrogate = mock_surrogate, limit_state = 1)
-    bd.covariance_type = cov_type
-    bd.covariances_ = covariances
-    covariance = bd._get_cluster_covariance(1)
-
-    np.testing.assert_almost_equal(clust_covariance.shape, covariance.shape)
-
-def test_shape_spherical_covariance():
-    mock_surrogate = Mock()
-    bd = BiasingDist(trained_surrogate = mock_surrogate, limit_state = 1)
-    bd.covariance_type = 'spherical'
-    bd.covariances_ = np.array([2,3])
-    covariance = bd._get_cluster_covariance(1)
-
-    np.testing.assert_almost_equal(3, covariance)
     
     
 #def test_saved_file(tmpdir):
