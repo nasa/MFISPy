@@ -9,14 +9,16 @@ from mock import Mock
 
 
 #def test_samples_drawn_are_correct_shape():
- #   num_samples = 100
- #   mock_surrogate = Mock()
- #   bd = BiasingDist(mock_surrogate, 1)
- #   samples = bd.draw_samples(num_samples)
- #   shape_expected = np.array([num_samples, bd.means_.shape[1]])
- #   np.testing.assert_array_equal(shape_expected, samples.shape)
+    #num_samples = 100
+    #mock_surrogate = Mock()
+    #bd = BiasingDist(mock_surrogate, 1)
+    ## how do I mock gmm?
+    #samples = bd.draw_samples(num_samples)
+    #shape_expected = np.array([num_samples, bd.means_.shape[1]])
+    #np.testing.assert_array_equal(shape_expected, samples.shape)
 
-def test_fit_calls_fit_from_failures():
+def test_fit_calls_gmm_fit_from_failures():
+    # check that mixture model was trained
     mock_surrogate = Mock()
     failure_threshold = -0.1
     bd = BiasingDist(trained_surrogate = mock_surrogate, 
@@ -32,8 +34,9 @@ def test_fit_calls_fit_from_failures():
     
     mock_fit_from_failed_inputs.assert_called()
 
+
 def test_fit_increases_N_surrogate_evals():
-    # check that mixture model was trained
+    # check that mixture model was not trained
     mock_surrogate = Mock()
     failure_threshold = -0.1
     bd = BiasingDist(trained_surrogate = mock_surrogate, 
@@ -43,8 +46,10 @@ def test_fit_increases_N_surrogate_evals():
     bd.get_surrogate_failed_inputs = mock_get_surrogate_failed_inputs
     
     with pytest.raises(ValueError):
-        message = bd.fit(100, 5, 'full')
+        message = bd.fit(N = 100, max_clusters = 5, 
+                         covariance_type = 'full')
  
+    
 def test_surrogate_failed_inputs_returned():
     mock_surrogate = Mock()
     failure_threshold = -0.1
@@ -62,6 +67,7 @@ def test_surrogate_failed_inputs_returned():
     
     assert (failed_inputs_received == failures).all
     
+    
 def test_evaluate_surrogate_returns_predictions():
     num_samples = 5
     predictions = np.array(range(num_samples))
@@ -74,7 +80,7 @@ def test_evaluate_surrogate_returns_predictions():
     
     assert (surrogate_output == predictions).all
     
-
+## not sure if this is needed
 #def test_samples_drawn_from_input_distribution():
     
 #    samples = [1,2,3,4,5]
@@ -97,14 +103,14 @@ def test_find_failures_returns_failures():
     bd = BiasingDist(trained_surrogate = mock_surrogate, 
                      limit_state = failure_threshold)
 
-    num_inputs = 10
-    inputs = np.array(range(1,num_inputs)).reshape(num_inputs-1,1)
+    num_inputs = 11
+    inputs = np.array(range(1,num_inputs+1)).reshape(num_inputs,1)
     outputs = -1/inputs
-
+    expected_failure_inputs = inputs[0:9,]
+    
     failure_inputs = bd._find_failures(inputs, outputs)
     
-    np.testing.assert_almost_equal(np.array(range(1,10)).reshape(9,1), 
-                                   failure_inputs)
+    np.testing.assert_almost_equal(expected_failure_inputs, failure_inputs)
             
 
 @pytest.mark.parametrize("gmm_attribute, attribute_example",
@@ -125,10 +131,6 @@ def test_attributes_from_gmm_copied(gmm_attribute, attribute_example):
     
     assert hasattr(bd, gmm_attribute)
     assert getattr(bd, gmm_attribute, attribute_example) == attribute_example
- #   bd = Mock()
- #   bd.train_mixture_model = Mock()
- #   attrs={'method.return_value': 3}
- #   bd.configure_mock(**attrs)
     
 
 #import mock    
@@ -151,24 +153,7 @@ def test_attributes_from_gmm_copied(gmm_attribute, attribute_example):
 #                     limit_state = failure_threshold)
 #    mock_gmm.return_value = FakeGmm()    
     
-    
-    
-    
-    
-#def test_evaluate_pdf_valid_probability():
-    #Test that probabilities are valid
-    
-    
-#def test_number_of_values_evaluate_pdf():
-    #Test that probabilities are valid     
-    
-    
-#def test_cluster_pdf_valid_probability():
-    #Test that probabilities are valid 
-    
-    
-#def test_number_of_values_cluster_pdf():
-    #Test that probabilities are valid     
+     
     
 #@patch('BiasingDist._evaluate_surrogate')    
 #def test_shape_of_surrogate_failures(mock_eval_surrogate):
@@ -178,8 +163,6 @@ def test_attributes_from_gmm_copied(gmm_attribute, attribute_example):
  #   mock_surrogate.configure_mock(**attrs)
     
     
-
-
 def test_number_of_predictions_from_evaluate_surrogate():
     # check that number of predictions matches number of inputs
     

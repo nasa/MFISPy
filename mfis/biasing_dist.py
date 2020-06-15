@@ -23,6 +23,7 @@ class BiasingDist:
             # don't attempt to compare against unrelated types
             return NotImplemented
     
+    
     def fit(self, N, max_clusters = 10, covariance_type = 'full'):
         failure_inputs = []
         max_attempts = 10; attempts = 1
@@ -35,6 +36,7 @@ class BiasingDist:
                                          covariance_type)
         else:
             raise ValueError(f"No failures found in 10*{N} surrogate draws")
+    
     
     def get_surrogate_failed_inputs(self, N):
          surrogate_predictions = self._evaluate_surrogate(N)
@@ -52,12 +54,15 @@ class BiasingDist:
     
     
     def _find_failures(self, inputs, outputs):
-        if isfunction(self._limit_state):
-            failure_indexes = self._limit_state(outputs) < 0
-        else:
-            failure_indexes = outputs < self._limit_state
+        if hasattr(self, '_limit_state'):
+            if isfunction(self._limit_state):
+                failure_indexes = self._limit_state(outputs) < 0
+            else:
+                failure_indexes = outputs < self._limit_state 
             
-        failure_inputs = inputs[failure_indexes.flatten(),:]
+            failure_inputs = inputs[failure_indexes.flatten(),:]
+        else:
+            raise ValueError("No limit state found to determine failures.")
     
         return(failure_inputs)
     
@@ -85,8 +90,7 @@ class BiasingDist:
     
     
     def draw_samples(self, num_samples):
-        mixture_model_samples = self._gmm.sample(num_samples)
-        
+        mixture_model_samples = self._gmm.sample(num_samples)[0]
         return mixture_model_samples
     
     
