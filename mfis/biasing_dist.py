@@ -7,7 +7,8 @@ import pickle
 class BiasingDist(InputDistribution):
     def __init__(self, trained_surrogate, limit_state = None, 
                  input_distribution = None, seed = None):
-        self._surrogate = trained_surrogate
+        if input_distribution is not None:
+            self._surrogate = trained_surrogate              
         if limit_state is not None:
             self._limit_state = limit_state
         if input_distribution is not None:
@@ -47,8 +48,12 @@ class BiasingDist(InputDistribution):
     def _evaluate_surrogate(self, N):
         if hasattr(self, 'input_distribution'):
             self._surrogate_inputs = self.input_distribution.draw_samples(N)
-        surrogate_predictions = self._surrogate.predict(self._surrogate_inputs)
-        
+        if hasattr(self, '_surrogate'):
+            surrogate_predictions = \
+                    self._surrogate.predict(self._surrogate_inputs)
+        else:
+            raise ValueError("Biasing Distribution not initialized"
+                                 " with surrogate.")
         return surrogate_predictions
     
     

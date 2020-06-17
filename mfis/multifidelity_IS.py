@@ -20,8 +20,8 @@ class multiIS:
     def calc_importance_weights(self, failure_inputs):
         input_density = self.input_distribution.evaluate_pdf(failure_inputs)
         mm_density = self.biasing_distribution.evaluate_pdf(failure_inputs)
-
-        return input_density/mm_density
+        
+        return input_density.flatten()/mm_density.flatten()
 
     
     def mfis_estimate(self, inputs, outputs, input_densities = None,
@@ -36,12 +36,14 @@ class multiIS:
             importance_weights = \
                 self._importance_weights_with_distributions(inputs, outputs)
         else:
-            raise ValueError("No input probability distributions or densities \
-                             supplied.")
+            raise ValueError("No input probability distributions or "
+                             "densities supplied.")
             
         probability_of_failure = np.sum(importance_weights)/len(inputs)
+        sqaured_errors = (importance_weights-probability_of_failure)**2
+        rmse = np.sqrt(np.mean(sqaured_errors)/len(inputs))
         
-        return probability_of_failure
+        return probability_of_failure, rmse
     
     
     def _importance_weights_with_distributions(self, inputs, outputs):
@@ -65,7 +67,7 @@ class multiIS:
         failure_inputs = failures[0]
         
         if len(failure_inputs) > 0:
-            importance_weights = failures[1]/failures[2]
+            importance_weights = failures[1].flatten()/failures[2].flatten()
         else: 
             raise ValueError("No failures found in data supplied.")
         
@@ -83,11 +85,11 @@ class multiIS:
     
     def _find_failures_and_densities(self, inputs, outputs, input_densities,
                       biasing_densities):
-        failure_indexes = self._find_failure_indices(outputs)
-            
-        failure_inputs = inputs[failure_indexes,:]
-        failure_input_densities = input_densities[failure_indexes,:]
-        failure_bias_densities = biasing_densities[failure_indexes,:]
+        failure_indices = self._find_failure_indices(outputs)
+        #import pdb; pdb.set_trace()    
+        failure_inputs = inputs[failure_indices,:]
+        failure_input_densities = input_densities[failure_indices]
+        failure_bias_densities = biasing_densities[failure_indices]
         
         return failure_inputs, failure_input_densities, failure_bias_densities
     
