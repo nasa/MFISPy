@@ -8,7 +8,7 @@ class multiIS:
                   input_distribution = None):
        if limit_state is not None:
             self._limit_state = limit_state
-       import pdb; pdb.set_trace()
+       #
        if biasing_distribution is not None:
            if isinstance(biasing_distribution, InputDistribution):
                self.biasing_distribution = biasing_distribution
@@ -24,26 +24,78 @@ class multiIS:
         return input_density/mm_density
 
     
-    def mfis_estimate(self, high_fidelity_inputs, high_fidelity_outputs):
-        failure_inputs = self._find_failures(high_fidelity_inputs, 
-                                       high_fidelity_outputs)
+    def mfis_estimate(self, inputs, outputs, input_densities = None,
+                      biasing_densities = None):
+        if (input_densities is not None and biasing_densities is not None):
+              importance_weights = \
+                  self._importance_weights_with_supplied_densities(
+                      inputs, outputs, input_densities, biasing_densities)
+                
+        elif (hasattr(self, 'biasing_distribution') and 
+                hasattr(self, 'input_distribution')):
+            importance_weights = \
+                self._importance_weights_with_distributions(inputs, outputs)
+        else:
+            raise ValueError("No input probability distributions or densities \
+                             supplied.")
+            
+        probability_of_failure = np.sum(importance_weights)/len(inputs)
+        
+        return probability_of_failure
+    
+    
+    def _importance_weights_with_distributions(self, inputs, outputs):
+        failure_inputs = self._find_failures(inputs, outputs)
+        
         if len(failure_inputs) > 0:
             importance_weights = self.calc_importance_weights(failure_inputs)
         else: 
             raise ValueError("No failures found in data supplied.")
         
-        probability_of_failure = np.add(importance_weights)/ \
-                                    len(high_fidelity_inputs)
+        return importance_weights
+    
+    
+    def _importance_weights_with_supplied_densities(self, inputs, outputs,
+                                                    input_densities, 
+                                                    biasing_densities):
         
-        return probability_of_failure
+        failures = self._find_failures_and_densities(inputs, outputs,
+                                                     input_densities, 
+                                                     biasing_densities)
+        failure_inputs = failures[0]
+        
+        if len(failure_inputs) > 0:
+            importance_weights = failures[1]/failures[2]
+        else: 
+            raise ValueError("No failures found in data supplied.")
+        
+        return importance_weights
+        
     
-    
-    def _find_failures(self, inputs, outputs):
-        if isfunction(self._limit_state):
-            failure_indexes = self._limit_state(outputs) < 0
-        else:
-            failure_indexes = outputs < self._limit_state
+    def _find_failures(self, inputs, outputs, input_densities = None,
+                      biasing_densities = None):
+        failure_indexes = self._find_failure_indices(outputs)
             
-        failure_inputs = inputs[failure_indexes.flatten(),:]
-    
+        failure_inputs = inputs[failure_indexes,:]
+
         return failure_inputs
+    
+    
+    def _find_failures_and_densities(self, inputs, outputs, input_densities,
+                      biasing_densities):
+        failure_indexes = self._find_failure_indices(outputs)
+            
+        failure_inputs = inputs[failure_indexes,:]
+        failure_input_densities = input_densities[failure_indexes,:]
+        failure_bias_densities = biasing_densities[failure_indexes,:]
+        
+        return failure_inputs, failure_input_densities, failure_bias_densities
+    
+    
+    def _find_failure_indices(self, outputs):
+        if isfunction(self._limit_state):
+            failure_indices = (self._limit_state(outputs) < 0).flatten()
+        else:
+            failure_indices = (outputs < self._limit_state).flatten()
+            
+        return failure_indices

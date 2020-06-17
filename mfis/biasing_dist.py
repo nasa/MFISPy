@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.mixture import GaussianMixture
-from scipy.stats import multivariate_normal
 from mfis.input_distribution import InputDistribution
 from inspect import isfunction
 import pickle
@@ -28,7 +27,7 @@ class BiasingDist(InputDistribution):
         failure_inputs = []
         max_attempts = 10; attempts = 1
         while (len(failure_inputs) == 0 and attempts <= max_attempts):
-            failure_inputs = self.get_surrogate_failed_inputs(N)
+            failure_inputs = self.get_failed_inputs_from_surrogate_draws(N)
             attempts = attempts + 1
         
         if len(failure_inputs) > 0:
@@ -38,7 +37,7 @@ class BiasingDist(InputDistribution):
             raise ValueError(f"No failures found in 10*{N} surrogate draws")
     
     
-    def get_surrogate_failed_inputs(self, N):
+    def get_failed_inputs_from_surrogate_draws(self, N):
          surrogate_predictions = self._evaluate_surrogate(N)
          failure_inputs = self._find_failures(self._surrogate_inputs,
                                                  surrogate_predictions)
@@ -46,7 +45,7 @@ class BiasingDist(InputDistribution):
     
     
     def _evaluate_surrogate(self, N):
-        if hasattr(self, '_input_distribution'):
+        if hasattr(self, 'input_distribution'):
             self._surrogate_inputs = self.input_distribution.draw_samples(N)
         surrogate_predictions = self._surrogate.predict(self._surrogate_inputs)
         
@@ -82,10 +81,11 @@ class BiasingDist(InputDistribution):
             mixmodel = GaussianMixture(n_components, 
                                        covariance_type = covariance_type)
             mixmodel.fit(train_data)
-            if mixmodel.bic(train_data) < lowest_bic:
-                lowest_bic = mixmodel.bic(train_data)
+            bic = mixmodel.bic(train_data)
+            if bic < lowest_bic:
+                lowest_bic = bic
                 best_gmm = mixmodel
-                
+               
         return best_gmm
     
     
@@ -114,9 +114,12 @@ class BiasingDist(InputDistribution):
 
     def save(self, filename):
         with open(filename, 'wb')as fObj: 
+            #pickle.dump(self.input_distribution, fObj)
+            #pickle.dump(self._gmm, fObj)
             pickle.dump(self.__dict__, fObj)
     
     
     def load(self, filename):
         with open(filename, 'rb') as fObj: 
             self.__dict__.update(pickle.load(fObj))
+            #self.__dict__.update(pickle.load(fObj))
