@@ -11,15 +11,15 @@ class multiIS:
        #
        if biasing_distribution is not None:
            if isinstance(biasing_distribution, InputDistribution):
-               self.biasing_distribution = biasing_distribution
+               self._biasing_distribution = biasing_distribution
        if input_distribution is not None:
            if isinstance(input_distribution, InputDistribution):
-               self.input_distribution = input_distribution
+               self._input_distribution = input_distribution
                 
                 
     def calc_importance_weights(self, failure_inputs):
-        input_density = self.input_distribution.evaluate_pdf(failure_inputs)
-        mm_density = self.biasing_distribution.evaluate_pdf(failure_inputs)
+        input_density = self._input_distribution.evaluate_pdf(failure_inputs)
+        mm_density = self._biasing_distribution.evaluate_pdf(failure_inputs)
         
         return input_density.flatten()/mm_density.flatten()
 
@@ -31,8 +31,8 @@ class multiIS:
                   self._importance_weights_with_supplied_densities(
                       inputs, outputs, input_densities, biasing_densities)
                 
-        elif (hasattr(self, 'biasing_distribution') and 
-                hasattr(self, 'input_distribution')):
+        elif (hasattr(self, '_biasing_distribution') and 
+                hasattr(self, '_input_distribution')):
             importance_weights = \
                 self._importance_weights_with_distributions(inputs, outputs)
         else:

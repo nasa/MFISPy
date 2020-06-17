@@ -7,13 +7,13 @@ import pickle
 class BiasingDist(InputDistribution):
     def __init__(self, trained_surrogate, limit_state = None, 
                  input_distribution = None, seed = None):
-        if input_distribution is not None:
+        if trained_surrogate is not None:
             self._surrogate = trained_surrogate              
         if limit_state is not None:
             self._limit_state = limit_state
         if input_distribution is not None:
             if isinstance(input_distribution, InputDistribution):
-                self.input_distribution = input_distribution
+                self._input_distribution = input_distribution
         self._surrogate_inputs = None      
         if seed is not None:
             np.random.seed(seed)
@@ -46,8 +46,8 @@ class BiasingDist(InputDistribution):
     
     
     def _evaluate_surrogate(self, N):
-        if hasattr(self, 'input_distribution'):
-            self._surrogate_inputs = self.input_distribution.draw_samples(N)
+        if hasattr(self, '_input_distribution'):
+            self._surrogate_inputs = self._input_distribution.draw_samples(N)
         if hasattr(self, '_surrogate'):
             surrogate_predictions = \
                     self._surrogate.predict(self._surrogate_inputs)
@@ -102,8 +102,8 @@ class BiasingDist(InputDistribution):
     def evaluate_pdf(self, samples):
         if hasattr(self, '_gmm'):
             samples_densities = self.evaluate_mixture_model_pdf(samples)
-        elif hasattr(self, 'input_distribution'):
-            samples_densities = self.input_distribution.evaluate_pdf(samples)
+        elif hasattr(self, '_input_distribution'):
+            samples_densities = self._input_distribution.evaluate_pdf(samples)
         else: 
             raise ValueError("No mixture model or input distribution exists.")
         
@@ -119,7 +119,7 @@ class BiasingDist(InputDistribution):
 
     def save(self, filename):
         with open(filename, 'wb')as fObj: 
-            #pickle.dump(self.input_distribution, fObj)
+            #pickle.dump(self._input_distribution, fObj)
             #pickle.dump(self._gmm, fObj)
             pickle.dump(self.__dict__, fObj)
     
