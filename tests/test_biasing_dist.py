@@ -56,37 +56,6 @@ def test_surrogate_failed_inputs_returned():
     failed_inputs_received = bd.get_failed_inputs_from_surrogate_draws(N = 10)
     
     assert (failed_inputs_received == failures).all
-    
-    
-#def test_evaluate_surrogate_returns_predictions():
-#    num_samples = 5
-#    predictions = np.array(range(num_samples))
-#    attrs = {'predict.return_value': [predictions]}
-#    mock_surrogate = Mock(**attrs)
-#    failure_threshold = -0.1
-#    bd = BiasingDist(trained_surrogate = mock_surrogate, 
-#                     limit_state = failure_threshold)
-#    surrogate_output = bd._evaluate_surrogate(N = num_samples)
-#    
-#    assert (surrogate_output == predictions).all
-    
-    
-    
-#def test_find_failures_returns_failures():    
-    # check that only inputs are returned that correspond to a failure
-#    mock_surrogate = Mock()
-#    failure_threshold = -0.1
-#    bd = BiasingDist(trained_surrogate = mock_surrogate, 
-#                     limit_state = failure_threshold)
-#
-#    num_inputs = 11
-#    inputs = np.array(range(1,num_inputs+1)).reshape(num_inputs,1)
-#    outputs = -1/inputs
-#    expected_failure_inputs = inputs[0:9,]
-#   
-#    failure_inputs = bd._find_failures(inputs, outputs)
-#    
-#    np.testing.assert_almost_equal(expected_failure_inputs, failure_inputs)
             
 
 @pytest.mark.parametrize("gmm_attribute, attribute_example",
@@ -123,7 +92,6 @@ def test_returns_min_bic_gmm(mock_gmm):
                                     covariance_type = 'full')
 
     assert mocked_gmm.bic(dummy_train_data) == 1
-    
  
     
 @patch('mfis.biasing_dist.GaussianMixture', autospec = True)
@@ -135,7 +103,7 @@ def test_samples_drawn_are_correct_shape(mock_gmm):
     
     mock_surrogate = Mock()
     bd = BiasingDist(mock_surrogate, 1)
-    bd.fit_from_failed_inputs(train_data = dummy_train_data, 
+    bd.fit_from_failed_inputs(failed_inputs = dummy_train_data, 
                               max_clusters = 2,
                               covariance_type = 'full')
 
@@ -143,20 +111,6 @@ def test_samples_drawn_are_correct_shape(mock_gmm):
     
     assert samples.shape == (num_samples, 3)    
     
-    
-#def test_number_of_predictions_from_evaluate_surrogate():
-#    # check that number of predictions matches number of inputs
-#    
-#    num_input_samples = 10
-#    mock_surrogate = Mock()
-#    attrs={'predict.return_value': np.ones((num_input_samples,1))}
-#    mock_surrogate.configure_mock(**attrs)
-#    
-#    bd = BiasingDist(trained_surrogate = mock_surrogate, limit_state = 1)
-#    bd._input_samples = 1
-#    surrogate_predictions = bd._evaluate_surrogate(num_input_samples)
-#    
-#    assert num_input_samples == len(surrogate_predictions)
     
 @patch('mfis.biasing_dist.pickle.dump')   
 def test_saved_file(mock_pickle):
@@ -177,3 +131,47 @@ def test_loaded_file(mock_pickle):
     bd.load(save_path)
     mock_pickle.assert_called_once() 
 
+
+#def test_number_of_predictions_from_evaluate_surrogate():
+#    # check that number of predictions matches number of inputs
+#    
+#    num_input_samples = 10
+#    mock_surrogate = Mock()
+#    attrs={'predict.return_value': np.ones((num_input_samples,1))}
+#    mock_surrogate.configure_mock(**attrs)
+#    
+#    bd = BiasingDist(trained_surrogate = mock_surrogate, limit_state = 1)
+#    bd._input_samples = 1
+#    surrogate_predictions = bd._evaluate_surrogate(num_input_samples)
+#    
+#    assert num_input_samples == len(surrogate_predictions)
+    
+    
+#def test_evaluate_surrogate_returns_predictions():
+#    num_samples = 5
+#    predictions = np.array(range(num_samples))
+#    attrs = {'predict.return_value': [predictions]}
+#    mock_surrogate = Mock(**attrs)
+#    failure_threshold = -0.1
+#    bd = BiasingDist(trained_surrogate = mock_surrogate, 
+#                     limit_state = failure_threshold)
+#    surrogate_output = bd._evaluate_surrogate(N = num_samples)
+#    
+#    assert (surrogate_output == predictions).all
+    
+    
+#def test_find_failures_returns_failures():    
+    # check that only inputs are returned that correspond to a failure
+#    mock_surrogate = Mock()
+#    failure_threshold = -0.1
+#    bd = BiasingDist(trained_surrogate = mock_surrogate, 
+#                     limit_state = failure_threshold)
+#
+#    num_inputs = 11
+#    inputs = np.array(range(1,num_inputs+1)).reshape(num_inputs,1)
+#    outputs = -1/inputs
+#    expected_failure_inputs = inputs[0:9,]
+#   
+#    failure_inputs = bd._find_failures(inputs, outputs)
+#    
+#    np.testing.assert_almost_equal(expected_failure_inputs, failure_inputs)

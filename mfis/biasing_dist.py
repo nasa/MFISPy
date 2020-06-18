@@ -17,11 +17,6 @@ class BiasingDist(InputDistribution):
         self._surrogate_inputs = None      
         if seed is not None:
             np.random.seed(seed)
-
-    def __eq__(self, other): 
-        if not isinstance(other, BiasingDist):
-            # don't attempt to compare against unrelated types
-            return NotImplemented
     
     
     def fit(self, N, max_clusters = 10, covariance_type = 'full'):
@@ -71,9 +66,9 @@ class BiasingDist(InputDistribution):
         return(failure_inputs)
     
     
-    def fit_from_failed_inputs(self, train_data, max_clusters = 10, 
+    def fit_from_failed_inputs(self, failed_inputs, max_clusters = 10, 
                            covariance_type = 'full'): 
-        self._gmm = self._lowest_bic_gmm(train_data, max_clusters, 
+        self._gmm = self._lowest_bic_gmm(failed_inputs, max_clusters, 
                                          covariance_type)
         
         self.__dict__.update(self._gmm.__dict__.copy()) 

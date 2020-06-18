@@ -4,17 +4,16 @@ from inspect import isfunction
 
 
 class multiIS:
-    def  __init__(self, limit_state = None, biasing_distribution = None,
-                  input_distribution = None):
+    def  __init__(self, limit_state = None, input_distribution = None,
+                  biasing_distribution = None):
        if limit_state is not None:
             self._limit_state = limit_state
-       #
-       if biasing_distribution is not None:
-           if isinstance(biasing_distribution, InputDistribution):
-               self._biasing_distribution = biasing_distribution
        if input_distribution is not None:
            if isinstance(input_distribution, InputDistribution):
                self._input_distribution = input_distribution
+       if biasing_distribution is not None:
+           if isinstance(biasing_distribution, InputDistribution):
+               self._biasing_distribution = biasing_distribution
                 
                 
     def calc_importance_weights(self, failure_inputs):
