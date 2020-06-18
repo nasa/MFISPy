@@ -47,6 +47,7 @@ def test_mfis_estimate(mocker):
     mfis_estimate = mIS.mfis_estimate(np.ones((N, 3)), np.zeros((N,)))
     np.testing.assert_almost_equal(expected_mfis_estimate,  mfis_estimate[0])
     
+    
 def test_mfis_estimate_without_distributions(mocker):
     N = 10
     input_densities= 1/np.array(range(100, 100 + N))
