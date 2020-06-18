@@ -20,6 +20,10 @@ class BiasingDist(InputDistribution):
     
     
     def fit(self, N, max_clusters = 10, covariance_type = 'full'):
+        possible_covariances = ['full','spherical','tied','diag']
+        if 'covariance_type' not in possible_covariances:
+            ValueError(f"covariance_type not found in: {possible_covariances}")
+        
         failure_inputs = []
         max_attempts = 10; attempts = 1
         while (len(failure_inputs) == 0 and attempts <= max_attempts):
@@ -67,7 +71,11 @@ class BiasingDist(InputDistribution):
     
     
     def fit_from_failed_inputs(self, failed_inputs, max_clusters = 10, 
-                           covariance_type = 'full'): 
+                           covariance_type = 'full'):
+        possible_covariances = ['full','spherical','tied','diag']
+        if 'covariance_type' not in possible_covariances:
+            ValueError(f"covariance_type not found in: {possible_covariances}")
+        
         self._gmm = self._lowest_bic_gmm(failed_inputs, max_clusters, 
                                          covariance_type)
         
