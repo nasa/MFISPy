@@ -1,7 +1,9 @@
-#InputDistribution class:
+# InputDistribution class:
 > An abstract base class for a distribution of input variables
+
 ## Parameters:
 * None
+
 ## Methods:
 * **draw_samples**(*self, num_samples*)
 	* Draws and returns an array of *num_samples* from the input distribution
