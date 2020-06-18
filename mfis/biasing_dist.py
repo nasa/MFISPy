@@ -48,8 +48,8 @@ class BiasingDist(InputDistribution):
     def _evaluate_surrogate(self, N):
         if hasattr(self, '_input_distribution'):
             self._surrogate_inputs = self._input_distribution.draw_samples(N)
-        if hasattr(self, '_surrogate'):
-            surrogate_predictions = \
+            if hasattr(self, '_surrogate'):
+                surrogate_predictions = \
                     self._surrogate.predict(self._surrogate_inputs)
         else:
             raise ValueError("Biasing Distribution not initialized"
