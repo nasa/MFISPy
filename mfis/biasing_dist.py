@@ -19,7 +19,7 @@ class BiasingDist(InputDistribution):
             np.random.seed(seed)
     
     
-    def fit(self, N, max_clusters = 10, covariance_type = 'full'):
+    def fit(self, num_samples, max_clusters = 10, covariance_type = 'full'):
         possible_covariances = ['full','spherical','tied','diag']
         if 'covariance_type' not in possible_covariances:
             ValueError(f"covariance_type not found in: {possible_covariances}")
@@ -27,26 +27,29 @@ class BiasingDist(InputDistribution):
         failure_inputs = []
         max_attempts = 10; attempts = 1
         while (len(failure_inputs) == 0 and attempts <= max_attempts):
-            failure_inputs = self.get_failed_inputs_from_surrogate_draws(N)
+            failure_inputs = \
+                self.get_failed_inputs_from_surrogate_draws(num_samples)
             attempts = attempts + 1
         
         if len(failure_inputs) > 0:
             self.fit_from_failed_inputs(failure_inputs, max_clusters, 
                                          covariance_type)
         else:
-            raise ValueError(f"No failures found in 10*{N} surrogate draws")
+            raise ValueError(f"No failures found in 10*{num_samples}"
+                             " surrogate draws")
     
     
-    def get_failed_inputs_from_surrogate_draws(self, N):
-         surrogate_predictions = self._evaluate_surrogate(N)
+    def get_failed_inputs_from_surrogate_draws(self, num_samples):
+         surrogate_predictions = self._evaluate_surrogate(num_samples)
          failure_inputs = self._find_failures(self._surrogate_inputs,
                                                  surrogate_predictions)
          return failure_inputs
     
     
-    def _evaluate_surrogate(self, N):
+    def _evaluate_surrogate(self, num_samples):
         if hasattr(self, '_input_distribution'):
-            self._surrogate_inputs = self._input_distribution.draw_samples(N)
+            self._surrogate_inputs = \
+                        self._input_distribution.draw_samples(num_samples)
             if hasattr(self, '_surrogate'):
                 surrogate_predictions = \
                     self._surrogate.predict(self._surrogate_inputs)

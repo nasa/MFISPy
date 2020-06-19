@@ -20,12 +20,12 @@ def test_fit_calls_gmm_fit_from_failures(mocker):
     mock_fit_from_failed_inputs = mocker.Mock()
     bd.fit_from_failed_inputs = mock_fit_from_failed_inputs
     
-    bd.fit(N=50)
+    bd.fit(num_samples = 50)
     
     mock_fit_from_failed_inputs.assert_called()
 
 
-def test_fit_increases_N_surrogate_evals(mocker):
+def test_fit_increases_number_of_surrogate_evals(mocker):
     # check that mixture model was not trained
     mock_surrogate = mocker.Mock()
     failure_threshold = -0.1
@@ -36,7 +36,7 @@ def test_fit_increases_N_surrogate_evals(mocker):
     bd.get_failed_inputs_from_surrogate_draws = mock_surrogate_failed_inputs
     
     with pytest.raises(ValueError):
-        message = bd.fit(N = 100, max_clusters = 5, 
+        message = bd.fit(num_samples = 100, max_clusters = 5, 
                          covariance_type = 'full')
  
     
@@ -53,7 +53,8 @@ def test_surrogate_failed_inputs_returned(mocker):
     mock_find_failures = mocker.Mock(return_value=failures)
     bd._find_failures = mock_find_failures
     
-    failed_inputs_received = bd.get_failed_inputs_from_surrogate_draws(N = 10)
+    failed_inputs_received = \
+            bd.get_failed_inputs_from_surrogate_draws(num_samples = 10)
     
     assert (failed_inputs_received == failures).all
             

@@ -27,13 +27,14 @@ class multiIS:
                       biasing_densities = None):
         if (input_densities is not None and biasing_densities is not None):
               importance_weights = \
-                  self._importance_weights_with_supplied_densities(
+                  self._calc_importance_weights_with_supplied_densities(
                       inputs, outputs, input_densities, biasing_densities)
                 
         elif (hasattr(self, '_biasing_distribution') and 
                 hasattr(self, '_input_distribution')):
             importance_weights = \
-                self._importance_weights_with_distributions(inputs, outputs)
+                self._calc_importance_weights_with_distributions(inputs, 
+                                                                 outputs)
         else:
             raise ValueError("No input probability distributions or "
                              "densities supplied.")
@@ -45,7 +46,7 @@ class multiIS:
         return probability_of_failure, rmse
     
     
-    def _importance_weights_with_distributions(self, inputs, outputs):
+    def _calc_importance_weights_with_distributions(self, inputs, outputs):
         failure_inputs = self._find_failures(inputs, outputs)
         
         if len(failure_inputs) > 0:
@@ -56,7 +57,7 @@ class multiIS:
         return importance_weights
     
     
-    def _importance_weights_with_supplied_densities(self, inputs, outputs,
+    def _calc_importance_weights_with_supplied_densities(self, inputs, outputs,
                                                     input_densities, 
                                                     biasing_densities):
         
@@ -85,7 +86,6 @@ class multiIS:
     def _find_failures_and_densities(self, inputs, outputs, input_densities,
                       biasing_densities):
         failure_indices = self._find_failure_indices(outputs)
-        #import pdb; pdb.set_trace()    
         failure_inputs = inputs[failure_indices,:]
         failure_input_densities = input_densities[failure_indices]
         failure_bias_densities = biasing_densities[failure_indices]
