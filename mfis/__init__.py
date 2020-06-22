@@ -1,5 +1,5 @@
 from .input_distribution import InputDistribution
 from .biasing_dist import BiasingDist
 from .multifidelity_IS import multiIS
-
+from .multivariate_independent_distribution import MultivariateIndependentDistribution
 

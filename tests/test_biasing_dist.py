@@ -7,89 +7,65 @@ from mfis import BiasingDist
 from mock import Mock, patch
 
 
-def test_fit_calls_gmm_fit_from_failures(mocker):
-    # check that mixture model was trained
-    mock_surrogate = mocker.Mock()
+@pytest.fixture
+def mocked_BiasingDist():
+    mock_surrogate = Mock()
     failure_threshold = -0.1
     bd = BiasingDist(trained_surrogate = mock_surrogate, 
                      limit_state = failure_threshold)
+    return bd
+
+def test_fit_calls_gmm_GridSearch(mocked_BiasingDist):
+    mock_surrogate_failed_inputs = Mock(return_value=np.array([2,3]))
+    mocked_BiasingDist.get_m_failed_inputs_from_surrogate_draws = \
+                mock_surrogate_failed_inputs
     
-    mock_surrogate_failed_inputs = mocker.Mock(return_value=[[2,3]])
-    bd.get_failed_inputs_from_surrogate_draws = mock_surrogate_failed_inputs
+    mock_fit_from_failed_inputs = Mock()
+    mocked_BiasingDist.fit_from_failed_inputs = mock_fit_from_failed_inputs
     
-    mock_fit_from_failed_inputs = mocker.Mock()
-    bd.fit_from_failed_inputs = mock_fit_from_failed_inputs
-    
-    bd.fit(num_samples = 50)
+    mocked_BiasingDist.fit(num_samples = 50, covariance_type = 'full')
     
     mock_fit_from_failed_inputs.assert_called()
 
 
-def test_fit_increases_number_of_surrogate_evals(mocker):
-    # check that mixture model was not trained
-    mock_surrogate = mocker.Mock()
-    failure_threshold = -0.1
-    bd = BiasingDist(trained_surrogate = mock_surrogate, 
-                     limit_state = failure_threshold)
-    
-    mock_surrogate_failed_inputs = mocker.Mock(return_value=[])
-    bd.get_failed_inputs_from_surrogate_draws = mock_surrogate_failed_inputs
+def test_fit_increases_number_of_surrogate_evals(mocked_BiasingDist):
+    side_effects =[None,np.ones((1,3)),None,
+                   np.ones((2,3)),np.ones((4,3))]
+    mock_surrogate_failed_inputs = mock.Mock(side_effect = side_effects)
+    mocked_BiasingDist.get_failed_inputs_from_surrogate_draws = \
+                mock_surrogate_failed_inputs
     
     with pytest.raises(ValueError):
-        message = bd.fit(num_samples = 100, max_clusters = 5, 
-                         covariance_type = 'full')
+        message = mocked_BiasingDist.fit(num_samples = 10,  min_failures = 8, 
+                         covariance_type = 'full', max_sample_attempts = 5)
  
     
-def test_surrogate_failed_inputs_returned(mocker):
-    mock_surrogate = mocker.Mock()
-    failure_threshold = -0.1
-    bd = BiasingDist(trained_surrogate = mock_surrogate, 
-                     limit_state = failure_threshold)
-    
-    mock_evaluate_surrogate = mocker.Mock(return_value=1)
-    bd._evaluate_surrogate = mock_evaluate_surrogate
+def test_surrogate_failed_inputs_returned(mocked_BiasingDist):
+    mock_evaluate_surrogate = Mock(return_value=1)
+    mocked_BiasingDist._evaluate_surrogate = mock_evaluate_surrogate
     
     failures = np.array([1,2,3])
-    mock_find_failures = mocker.Mock(return_value=failures)
-    bd._find_failures = mock_find_failures
+    mock_find_failures = Mock(return_value=failures)
+    mocked_BiasingDist._find_failures = mock_find_failures
     
     failed_inputs_received = \
-            bd.get_failed_inputs_from_surrogate_draws(num_samples = 10)
+            mocked_BiasingDist.get_failed_inputs_from_surrogate_draws(num_samples = 10)
     
     assert (failed_inputs_received == failures).all
             
-
-@pytest.mark.parametrize("gmm_attribute, attribute_example",
-                         [('covariance_type','full'),('means_',[3,4]),
-                          ('covariances_',[[3, .6],[.6,1]])])
-def test_attributes_from_gmm_copied(mocker, gmm_attribute, attribute_example):
-    mock_surrogate = mocker.Mock()
-    failure_threshold = -0.1
-    bd = BiasingDist(trained_surrogate = mock_surrogate, 
-                     limit_state = failure_threshold)
     
-    mock_gmm = mocker.Mock()                                 
-    #mock_gmm.covariance_type = attribute_example
-    setattr(mock_gmm,gmm_attribute,attribute_example)
-    bd._lowest_bic_gmm = mocker.Mock(return_value = mock_gmm)
-    
-    bd.fit_from_failed_inputs(range(10))
-    
-    assert hasattr(bd, gmm_attribute)
-    assert getattr(bd, gmm_attribute, attribute_example) == attribute_example
-    
-
-def test_returns_min_bic_gmm(mocker):
+def test_returns_min_bic_gmm():
     mock_gmm = mocker.patch('mfis.biasing_dist.GaussianMixture', 
                             autospec = True)
-    mock_gmm.return_value.bic.side_effect = [3,2,1]
+
+    mock_gmm.return_value.score.side_effect = [3,2,1]
     
     mock_surrogate = mocker.Mock()
     failure_threshold = -0.1
     bd = BiasingDist(trained_surrogate = mock_surrogate, 
                      limit_state = failure_threshold)
     dummy_train_data = np.ones((100,3))
-    mocked_gmm = bd._lowest_bic_gmm(train_data = dummy_train_data, 
+    mocked_gmm = bd._gmm_GridSearch(train_data = dummy_train_data, 
                                     max_clusters = 3, 
                                     covariance_type = 'full')
 
@@ -101,17 +77,16 @@ def test_samples_drawn_are_correct_shape(mocker):
                             autospec = True)
     num_samples = 100
     dummy_train_data = np.ones((200,3))
-    mock_gmm.return_value.sample.return_value = (np.ones((num_samples, 3)),0)
-    mock_gmm.return_value.bic.side_effect = [1, 2]
+    mock_gmm().sample.return_value = (np.ones((num_samples, 3)),0)
+    mock_gmm().bic.side_effect = [1, 2]
     
     mock_surrogate = mocker.Mock()
     bd = BiasingDist(mock_surrogate, 1)
-    bd.fit_from_failed_inputs(failed_inputs = dummy_train_data, 
-                              max_clusters = 2,
-                              covariance_type = 'full')
+    bd.fit_from_failed_inputs(dummy_train_data, 
+                              covariance_type = 'full',
+                              max_clusters = 2)
 
     samples = bd.draw_samples(num_samples)
-    
     assert samples.shape == (num_samples, 3)    
     
        
