@@ -12,6 +12,36 @@
 	* Evaluates the input distribution for the samples provided and returns an array of probability densities
 	* samples: an array of input samples
 
+# MultivariateIndependentDistribution class:
+> A subclass of InputDistribution that stitches together multiple continuouse probability distribution instances from the *scipy.stats* library.
+
+## Parameters:
+* **list_of_distributions**: a list of instances of continuous distributions from the *scipy.stats* library.
+* **seed**: *optional* attribute to set the random seed
+## Methods:
+* **draw_samples**(*self, num_samples*)
+	* Draws and returns and array of *num_samples* by length of *list_of_distributions* from the various marginal input distributions
+	* num_samples: int of samples to draw
+* **evaluate_pdf**(*self, samples*)
+	* Evaluates the marginal input distributions for the samples provided and returns an array of the probability densities
+	* samples: an array of input sample (number of columns matches the length of *list_of_distributions*)
+
+# MultivariateNormalDistribution class:
+> A subclass of InputDistribution that builds and draws from a Multivariate Normal Distribution
+
+## Parameters:
+* **mean**: an array of means of the distribution
+* **cov**: a square 2D array that consists of the covariance matrix. The matrix should have the same length as *mean* and be positive-definite
+* **seed**: *optional* attribute to set the random seed
+## Methods:
+* **draw_samples**(*self, num_samples*)
+        * Draws and returns an array of *num_samples* from a multivariate normal distribution
+        * num_samples: int of samples to draw
+* **evaluate_pdf**(*self, samples*)
+        * Evaluates the multivariate normal distribution for the samples provided and returns an array of probability densities
+        * samples: an array of input samples
+
+
 # BiasingDist class:
 > A subclass of InputDistribution that builds a Biasing Distribution from a Gaussian Mixture model trained on a series of data points that produce failures based on a limit state function.
 
