@@ -42,13 +42,14 @@ class BiasingDist(InputDistribution):
         attempts = 1
         while (len(failure_inputs) < min_failures and 
                attempts <= max_sample_attempts):
+
             new_failure_inputs = \
                 self.get_failed_inputs_from_surrogate_draws(num_samples)
-            #import pdb; pdb.set_trace()
+
             if new_failure_inputs is not None:
-                if failure_inputs is None: 
+                if len(failure_inputs) == 0:
                     failure_inputs = new_failure_inputs
-                else: 
+                else:
                     failure_inputs = np.vstack((failure_inputs,
                      new_failure_inputs.reshape(len(new_failure_inputs),-1)))
                     
@@ -58,6 +59,9 @@ class BiasingDist(InputDistribution):
             print(failure_inputs)
             raise ValueError(f"Less than {min_failures} failures found in "
                     f"{max_sample_attempts}*{num_samples} surrogate draws")
+        else:
+            return failure_inputs
+    
     
     def get_failed_inputs_from_surrogate_draws(self, num_samples):
          surrogate_predictions = self._evaluate_surrogate(num_samples)
