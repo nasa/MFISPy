@@ -17,6 +17,10 @@ class multiIS:
             self._biasing_distribution = None
                 
     def calc_importance_weights(self, inputs):
+        if self._input_distribution is None or \
+         self._biasing_distribution is None:
+             raise ValueError("Probability distributions are not supplied.")
+        
         input_density = self._input_distribution.evaluate_pdf(inputs)
         mm_density = self._biasing_distribution.evaluate_pdf(inputs)
         
@@ -41,6 +45,7 @@ class multiIS:
         rmse = np.sqrt(np.mean(sqaured_errors)/len(inputs))
         
         return probability_of_failure, rmse
+    
     
     def _evaluate_pdfs(self, inputs, input_densities, biasing_densities):
         if input_densities is None:
@@ -74,13 +79,4 @@ class multiIS:
         else:
             failure_indicators = (outputs < self._limit_state)*1
     
-        return failure_indicators
-    
-    
-    def _find_failures(self, inputs, outputs):
-        failure_indexes = self._find_failure_indices(outputs)
-            
-        failure_inputs = inputs[failure_indexes,:]
-
-        return failure_inputs
-    
+        return failure_indicators       
