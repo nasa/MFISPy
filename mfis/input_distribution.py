@@ -6,13 +6,44 @@ Created on Wed Jun 10 11:26:19 2020
 """
 from abc import ABCMeta, abstractmethod
 
-class InputDistribution(metaclass = ABCMeta):
+class InputDistribution(metaclass=ABCMeta):
+    """
+
+    Parameters
+    ----------
+    None.
+
+    """
     def __init__(self):
         pass
-    
+
     @abstractmethod
     def draw_samples(self, num_samples):
-        pass
-    @abstractmethod    
+        """
+
+        Parameters
+        ----------
+        num_samples : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+
+
+    @abstractmethod
     def evaluate_pdf(self, samples):
-        pass
+        """
+
+        Parameters
+        ----------
+        samples : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """

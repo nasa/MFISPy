@@ -15,7 +15,7 @@ def mocked_BiasingDist(mocker):
                      limit_state = failure_threshold)
     return bd
 
-def test_fit_calls_gmm_GridSearch(mocker, mocked_BiasingDist):
+def test_fit_calls_mixture_moodel_grid_search(mocker, mocked_BiasingDist):
     mock_surrogate_failed_inputs = mocker.Mock(return_value=np.array([2,3]))
     mocked_BiasingDist.get_m_failed_inputs_from_surrogate_draws = \
                 mock_surrogate_failed_inputs
@@ -155,25 +155,26 @@ def test_bad_covariance_type_raises_error_in_fit_from_failed_inputs(
 def test_valid_covariance_type_in_fit_from_failed_inputs_runs(mocker,
         mocked_BiasingDist, cov_type):
 
-    mock_gmm_grid_search = mocker.Mock(return_value = 1)
-    mocked_BiasingDist._gmm_GridSearch = mock_gmm_grid_search
+    mock_mixture_model_grid_search = mocker.Mock(return_value = 1)
+    mocked_BiasingDist._mixture_model_grid_search = \
+        mock_mixture_model_grid_search
 
     dummy_inputs = np.ones((10,3))    
     mocked_BiasingDist.fit_from_failed_inputs(failed_inputs = dummy_inputs,
                                               covariance_type = cov_type)
     
-    mock_gmm_grid_search.assert_called()
+    mock_mixture_model_grid_search.assert_called()
     
     
 def test_GridSearch_called(mocker, mocked_BiasingDist):
-    mock_gmm = mocker.patch('mfis.biasing_dist.GaussianMixture', 
+    mock_mixture_model = mocker.patch('mfis.biasing_dist.GaussianMixture', 
                             autospec = True)
     mock_grid_search = mocker.patch('mfis.biasing_dist.GridSearchCV')
-    mock_grid_search.return_value.best_estimator_ = mock_gmm
+    mock_grid_search.return_value.best_estimator_ = mock_mixture_model
     
     dummy_train_data = np.ones((100,3))
     
-    best_gmm = mocked_BiasingDist._gmm_GridSearch(
+    best_mixture_model = mocked_BiasingDist._mixture_model_grid_search(
         train_data = dummy_train_data, max_clusters = 3, 
         covariance_type = ['full'])
     
@@ -182,9 +183,9 @@ def test_GridSearch_called(mocker, mocked_BiasingDist):
 
 def test_evaluate_pdf_calls_evaluate_mixture_model_pdf(mocker, 
                                                        mocked_BiasingDist):
-    mock_gmm = mocker.patch('mfis.biasing_dist.GaussianMixture', 
+    mock_mixture_model = mocker.patch('mfis.biasing_dist.GaussianMixture', 
                             autospec = True)
-    mocked_BiasingDist.gmm_ = mock_gmm
+    mocked_BiasingDist.mixture_model_ = mock_mixture_model
     
     mock_evaluate_mixed_model_pdf = mocker.patch("mfis.biasing_dist."
                                     "BiasingDist.evaluate_mixture_model_pdf")
@@ -216,13 +217,14 @@ def test_densities_from_input_dist_are_correct_length(mocker,
     assert len(densities) == num_samples  
 
 
-def test_densities_from_gmm_are_correct_length(mocker, mocked_BiasingDist):
-    mock_gmm = mocker.Mock()
+def test_densities_from_mixture_model_are_correct_length(mocker, 
+                                                         mocked_BiasingDist):
+    mock_mixture_model = mocker.Mock()
     num_samples = 20
     dummy_samples = np.ones((num_samples, 3))
-    mock_gmm.score_samples.return_value = np.ones((num_samples,1))
+    mock_mixture_model.score_samples.return_value = np.ones((num_samples,1))
     
-    mocked_BiasingDist.gmm_ = mock_gmm
+    mocked_BiasingDist.mixture_model_ = mock_mixture_model
 
     densities = mocked_BiasingDist.evaluate_mixture_model_pdf(
         samples = dummy_samples)
@@ -244,14 +246,15 @@ def test_samples_drawn_from_input_dist_are_correct_shape(mocker,
     assert (samples == return_samples).all()
 
 
-def test_samples_drawn_from_gmm_are_correct_shape(mocker, mocked_BiasingDist):
-    mock_gmm = mocker.Mock()
+def test_samples_drawn_from_mixture_model_are_correct_shape(mocker, 
+                                                            mocked_BiasingDist):
+    mock_mixture_model = mocker.Mock()
     num_samples = 20
     return_samples = np.ones((num_samples, 3))
-    mock_gmm.sample.return_value = [return_samples,
+    mock_mixture_model.sample.return_value = [return_samples,
                                       np.zeros((num_samples, 3))]
 
-    mocked_BiasingDist.gmm_ = mock_gmm
+    mocked_BiasingDist.mixture_model_ = mock_mixture_model
 
     samples = mocked_BiasingDist.draw_samples(num_samples)
     assert (samples == return_samples).all()    
