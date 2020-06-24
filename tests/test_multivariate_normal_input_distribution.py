@@ -4,7 +4,22 @@ from scipy.stats import norm
 from mfis import MultivariateNormalDistribution
 
 
-@pytest.mark.parametrize("mean, cov,num_samples",
+def test_covariance_is_diagonal():
+    mean = [3,4,5]
+    cov = [2,.4,.02]
+    mvn = MultivariateNormalDistribution(mean, cov)
+    
+    assert (mvn.cov_ == np.diag(cov)).all()
+
+@pytest.mark.parametrize("mean, cov",
+                         [([3,6,0.2], np.array([[2,.7,.4], [.7,.5,.02]])), 
+                          ([3,6,0.2], np.array([[2,.7], [.7,.5]]))])
+def test_incorrect_mean_covariance_dimensions_raise_error(mean, cov):
+    with pytest.raises(ValueError):
+        mvn = MultivariateNormalDistribution(mean, cov)
+
+
+@pytest.mark.parametrize("mean, cov, num_samples",
                          [([3,6,0.2],
                           np.array([[2,.7,.4], [.7,.5,.02], [.4,.02,1]]),
                           5), ([3,6], np.array([[1.5,.2], [.2,.045]]), 10)])
@@ -13,8 +28,9 @@ def test_draw_samples_is_correct_shape(mean, cov, num_samples):
     mvn = MultivariateNormalDistribution(mean, cov)
     samples = mvn.draw_samples(num_samples)
     
-    shape_expected = np.array([num_samples, len(mvn._mean)])
+    shape_expected = np.array([num_samples, len(mvn.mean_)])
     np.testing.assert_array_equal(shape_expected, samples.shape)
+
 
 def test_draw_sample_is_within_bounds():
     
@@ -27,6 +43,7 @@ def test_draw_sample_is_within_bounds():
     for i,var in enumerate(cov):
         assert np.min(samples[:,i]) > mean[i] - 6 * np.sqrt(var[i])
         assert np.max(samples[:,i]) < mean[i] + 6 * np.sqrt(var[i])
+
 
 def test_same_seed_gives_same_samples():
 
@@ -42,6 +59,7 @@ def test_same_seed_gives_same_samples():
     np.testing.assert_array_equal(samples_v1,
                                   samples_v2)
 
+
 def test_different_seeds_give_different_samples():
 
     mean = [3,6,0.2]
@@ -56,6 +74,7 @@ def test_different_seeds_give_different_samples():
 
     assert not np.array_equal(samples_v1, samples_v2)
 
+
 def test_evaluate_pdf():
 
     mean = [3,6]
@@ -67,6 +86,7 @@ def test_evaluate_pdf():
                     norm.pdf(samples[0,1], mean[1], np.sqrt(cov[1,1]))
     np.testing.assert_almost_equal(expected_pdf.reshape(1,1), 
                                    mvn.evaluate_pdf(samples))
+    
     
 def test_evaluate_pdf_valid_probability():
 

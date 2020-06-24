@@ -4,7 +4,7 @@ from sklearn.mixture import GaussianMixture
 from scipy.stats import multivariate_normal
 from scipy.stats import norm
 from mfis import BiasingDist
-from mock import Mock, patch
+#from mock import Mock, patch
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def test_fit_calls_gmm_GridSearch(mocker, mocked_BiasingDist):
     mocked_BiasingDist.get_m_failed_inputs_from_surrogate_draws = \
                 mock_surrogate_failed_inputs
     
-    mock_fit_from_failed_inputs = Mock()
+    mock_fit_from_failed_inputs = mocker.Mock()
     mocked_BiasingDist.fit_from_failed_inputs = mock_fit_from_failed_inputs
     
     mocked_BiasingDist.fit(num_samples = 50, covariance_type = 'full')
@@ -74,9 +74,9 @@ def test_surrogate_failed_inputs_returned(mocker, mocked_BiasingDist):
 def test_evaluate_surrogate_raises_error_with_no_surrogate(mocker):
     bd = BiasingDist(limit_state = -1)
     
-    mocked_input_distribution = Mock()
+    mocked_input_distribution = mocker.Mock()
     mocked_input_distribution().draw_samples.return_value = np.ones((3,2))
-    mocked_BiasingDist._input_distribution = mocked_input_distribution
+    bd._input_distribution = mocked_input_distribution
     
     with pytest.raises(ValueError):
         bd._evaluate_surrogate(num_samples = 4)
@@ -89,10 +89,10 @@ def test_evaluate_surrogate_raises_error_with_no_input_dist(mocker,
 
 
 def test_evaluate_surrogate_runs(mocker):
-    mock_surrogate = Mock()
+    mock_surrogate = mocker.Mock()
     mock_surrogate().predict.return_value = np.array([-2,-1,0])
     
-    mocked_input_distribution = Mock()
+    mocked_input_distribution = mocker.Mock()
     mocked_input_distribution().draw_samples.return_value = np.ones((3,2))
     
     failure_threshold = -0.1
@@ -103,7 +103,43 @@ def test_evaluate_surrogate_runs(mocker):
     surrogate_samples = mocked_BiasingDist._evaluate_surrogate(num_samples = 3)
     
     assert (surrogate_samples == np.array([-2,-1,0])).all
-        
+
+
+def test_find_failures_raise_error_with_no_limit_state():
+    bd = BiasingDist()
+    num_samples = 10
+    dummy_inputs = np.ones((num_samples,3))
+    dummy_outputs = np.zeros((num_samples,))
+    
+    with pytest.raises(ValueError):
+        bd._find_failures(dummy_inputs, dummy_outputs)
+
+
+def test_find_failures_with_threshold(mocker, mocked_BiasingDist):
+    dummy_inputs = [ele for ele in [1,2,3,4,5,6] for i in range(3)]
+    dummy_inputs = np.array(dummy_inputs).reshape((6,3))
+    dummy_outputs = np.array([2,-3,-4,6,8,1])
+
+    expected_failures = np.array([[2,2,2],[3,3,3]])
+    failures = mocked_BiasingDist._find_failures(dummy_inputs, dummy_outputs)
+    
+    assert (expected_failures == failures).all()
+
+
+def test_find_failures_with_limit_state_function():
+    dummy_inputs = [ele for ele in [1,2,3,4,5,6] for i in range(3)]
+    dummy_inputs = np.array(dummy_inputs).reshape((6,3))
+    dummy_outputs = np.array([2,-3,-4,6,8,1])
+    def limit_state(input):
+        return input + .1
+    
+    bd = BiasingDist(limit_state = limit_state)
+    
+    expected_failures = np.array([[2,2,2],[3,3,3]])
+    failures = bd._find_failures(dummy_inputs, dummy_outputs)
+    
+    assert (expected_failures == failures).all()
+
 
 @pytest.mark.parametrize("cov_type", ["dia", -1])    
 def test_bad_covariance_type_raises_error_in_fit_from_failed_inputs(
@@ -144,6 +180,20 @@ def test_GridSearch_called(mocker, mocked_BiasingDist):
     mock_grid_search.assert_called()
 
 
+def test_evaluate_pdf_calls_evaluate_mixture_model_pdf(mocker, 
+                                                       mocked_BiasingDist):
+    mock_gmm = mocker.patch('mfis.biasing_dist.GaussianMixture', 
+                            autospec = True)
+    mocked_BiasingDist.gmm_ = mock_gmm
+    
+    mock_evaluate_mixed_model_pdf = mocker.patch("mfis.biasing_dist."
+                                    "BiasingDist.evaluate_mixture_model_pdf")
+
+    dummy_inputs = np.ones((10,3))
+    mocked_BiasingDist.evaluate_pdf(dummy_inputs)
+    
+    mock_evaluate_mixed_model_pdf.assert_called_with(dummy_inputs)
+
 
 def test_check_distribution_exists_decorator_raises_error(mocked_BiasingDist):
 
@@ -167,7 +217,7 @@ def test_densities_from_input_dist_are_correct_length(mocker,
 
 
 def test_densities_from_gmm_are_correct_length(mocker, mocked_BiasingDist):
-    mock_gmm = Mock()
+    mock_gmm = mocker.Mock()
     num_samples = 20
     dummy_samples = np.ones((num_samples, 3))
     mock_gmm.score_samples.return_value = np.ones((num_samples,1))
@@ -195,7 +245,7 @@ def test_samples_drawn_from_input_dist_are_correct_shape(mocker,
 
 
 def test_samples_drawn_from_gmm_are_correct_shape(mocker, mocked_BiasingDist):
-    mock_gmm = Mock()
+    mock_gmm = mocker.Mock()
     num_samples = 20
     return_samples = np.ones((num_samples, 3))
     mock_gmm.sample.return_value = [return_samples,

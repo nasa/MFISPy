@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from mfis import multiIS
 from mfis.input_distribution import InputDistribution
-from mock import Mock
+#from mock import Mock
 
       
 def test_calc_importance_weights(mocker):
@@ -19,9 +19,18 @@ def test_calc_importance_weights(mocker):
     
     expected_weights = input_densities/biasing_dist_densities
     
+    
     weights = importance_sampling.calc_importance_weights(1)
     
     assert (expected_weights == weights).all()
+
+
+def test_calc_importance_weights_no_dists_raises_error(mocker):
+    importance_sampling = multiIS()
+    dummy_inputs = np.ones((10,3))
+    
+    with pytest.raises(ValueError):
+        weights = importance_sampling.calc_importance_weights(dummy_inputs)
 
 
 def test_calc_importance_weights_with_densities():
@@ -39,10 +48,21 @@ def test_calc_importance_weights_with_densities():
     assert (expected_weights == weights).all()
 
 
-def test_find_failure_indicators():
-    N = 10
+def test_find_failure_indicators_with_threshold():
     outputs = np.array([2,3,-4,6,8,1])
     mIS = multiIS(limit_state = 4)
+    
+    failure_indicators = mIS._find_failure_indicators(outputs)
+    
+    assert (failure_indicators == np.array([1,1,1,0,0,1])).all()
+
+
+def test_find_failure_indicators_with_limit_state_function():
+    outputs = np.array([2,3,-4,6,8,1])
+    def limit_state(input):
+        return input - 4
+    
+    mIS = multiIS(limit_state = limit_state)
     
     failure_indicators = mIS._find_failure_indicators(outputs)
     

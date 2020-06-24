@@ -92,7 +92,7 @@ class BiasingDist(InputDistribution):
     
     
     def _find_failures(self, inputs, outputs):
-        if hasattr(self, '_limit_state'):
+        if self._limit_state is not None:
             if isfunction(self._limit_state):
                 failure_indexes = self._limit_state(outputs) < 0
             else:

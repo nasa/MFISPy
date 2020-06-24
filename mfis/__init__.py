@@ -3,5 +3,4 @@ from .biasing_dist import BiasingDist
 from .multifidelity_IS import multiIS
 from .multivariate_independent_distribution import MultivariateIndependentDistribution
 from .multivariate_normal_distribution import MultivariateNormalDistribution
-from .uniform_distribution import IndependentUniformDistribution
 
