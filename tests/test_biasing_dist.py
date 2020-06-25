@@ -189,7 +189,7 @@ def test_evaluate_pdf_calls_evaluate_mixture_model_pdf(mocker,
 
     mock_evaluate_mixed_model_pdf = mocker.patch("mfis.biasing_distribution."
                                                  "BiasingDistribution."
-                                                 "evaluate_mixture_model_pdf")
+                                                 "_evaluate_mixture_model_pdf")
 
     dummy_inputs = np.ones((10, 3))
     mock_bias_dist.evaluate_pdf(dummy_inputs)
@@ -227,7 +227,7 @@ def test_densities_from_mixture_model_are_correct_length(mocker,
 
     mock_bias_dist.mixture_model_ = mock_mixture_model
 
-    densities = mock_bias_dist.evaluate_mixture_model_pdf(
+    densities = mock_bias_dist._evaluate_mixture_model_pdf(
         samples=dummy_samples)
 
     assert len(densities) == n_samples
