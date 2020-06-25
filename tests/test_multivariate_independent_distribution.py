@@ -18,9 +18,9 @@ def test_draw_samples_is_correct(mocker):
     num_samples = len(normal_samples)
     samples = input_dist.draw_samples(num_samples)
     
-    expected_samples = np.concatenate((normal_samples.reshape((3,1)), 
-                                       uniform_samples.reshape((3,1))), 
-                                      axis = 1)
+    expected_samples = np.concatenate((normal_samples.reshape((3, 1)), 
+                                       uniform_samples.reshape((3, 1))), 
+                                      axis=1)
     
     np.testing.assert_array_equal(expected_samples, samples)
 
@@ -28,19 +28,20 @@ def test_draw_samples_is_correct(mocker):
 def test_same_seed_gives_same_samples():
 
     np.random.seed(1)
-    normal_dist = ss.norm(loc = 3, scale = 5)
-    uniform_dist = ss.uniform(loc = -2, scale = 1)
+    normal_dist = ss.norm(loc=3, scale=5)
+    uniform_dist = ss.uniform(loc=-2, scale=1)
     
     num_samples = 10
     normal_samples = normal_dist.rvs(num_samples)
     uniform_samples = uniform_dist.rvs(num_samples)
     
-    input_dist = MultivariateIndependentDistribution([normal_dist, uniform_dist], seed = 1)
+    input_dist = MultivariateIndependentDistribution([normal_dist,
+                                                      uniform_dist], seed=1)
     samples = input_dist.draw_samples(num_samples)
     
     expected_samples = np.concatenate((
-                         normal_samples.reshape((num_samples,1)), 
-                         uniform_samples.reshape((num_samples,1))), axis = 1)
+                         normal_samples.reshape((num_samples, 1)), 
+                         uniform_samples.reshape((num_samples, 1))), axis=1)
 
     np.testing.assert_array_equal(expected_samples, samples)
 
@@ -48,8 +49,8 @@ def test_same_seed_gives_same_samples():
 def test_different_seeds_give_different_samples():
 
     np.random.seed(1)
-    normal_dist = ss.norm(loc = 3, scale = 5)
-    uniform_dist = ss.uniform(loc = -2, scale = 1)
+    normal_dist = ss.norm(loc=3, scale=5)
+    uniform_dist = ss.uniform(loc=-2, scale=1)
     
     num_samples = 10
     normal_samples = normal_dist.rvs(num_samples)
@@ -79,7 +80,7 @@ def test_evaluate_pdf(mocker):
     input_dist = MultivariateIndependentDistribution([mock_normal_dist, 
                                            mock_uniform_dist])
 
-    dummy_samples = np.ones((len(normal_densities),2))
+    dummy_samples = np.ones((len(normal_densities), 2))
     densities = input_dist.evaluate_pdf(samples = dummy_samples)
 
     expected_densities = normal_densities * uniform_densities
@@ -87,8 +88,8 @@ def test_evaluate_pdf(mocker):
     
     
 @pytest.mark.parametrize("normal_densities, uniform_densities",
-                         [(np.array([0,4]), np.array([1,1])),
-                          (np.array([1,.2]), np.array([.5,.5]))])    
+                         [(np.array([0, 4]), np.array([1, 1])),
+                          (np.array([1, .2]), np.array([.5, .5]))])    
 def test_evaluate_pdf_valid_density(mocker, normal_densities, 
                                         uniform_densities):
 

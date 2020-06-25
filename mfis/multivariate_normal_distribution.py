@@ -1,15 +1,31 @@
 """
-Created on Wed Jun 10 11:26:19 2020
+The :mod:'mfis.multivariate_normal_distribution' wraps a
+Multivariate Normal Distribution to be used as an input distribution.
 
-@author: dacole2
+@author:    D. Austin Cole <david.a.cole@nasa.gov>
+            James E. Warner <james.e.warner@nasa.gov>
 """
+
 from scipy.stats import multivariate_normal
 import numpy as np
 from .input_distribution import InputDistribution
 
+
 class MultivariateNormalDistribution(InputDistribution):
     """
-    Coming soon.
+    A multivariate normal distribution to be used to describe the distribution
+    of inputs.
+    
+    Parameters
+    ----------
+    mean: array
+        The mean vector of length d (dimensions) for the distribution
+    
+    cov: 2D array
+        The d by d positive-definite covariance matrix for the distribution
+        
+    seed: int
+        The seed number
     """
     def __init__(self, mean, cov, seed=None):
         self.mean_ = mean
@@ -23,43 +39,42 @@ class MultivariateNormalDistribution(InputDistribution):
             np.random.seed(seed)
 
 
-    def draw_samples(self, num_samples):
+    def draw_samples(self, n_samples):
         """
-        Coming soon.
+        Draws random input samples from the Multivariate Normal distribution
 
         Parameters
         ----------
-        num_samples : int
-            TYPE
-            DESCRIPTION.
+        n_samples : int
+            Number of samples to draw
 
         Returns
         -------
         samples : array
-            TYPE
-            DESCRIPTION.
+            An n_samples by d array of sample inputs from the Multivariate 
+            Normal distribution
 
         """
-        samples = multivariate_normal.rvs(self.mean_, self.cov_, num_samples)
+        samples = multivariate_normal.rvs(self.mean_, self.cov_, n_samples)
 
         return samples
 
 
     def evaluate_pdf(self, samples):
         """
-        Coming soon.
+        Evaluates the probability density function of Multivariate Normal 
+        distribution
 
         Parameters
         ----------
         samples : array
-            TYPE
-            DESCRIPTION.
+            An n_samples by d array of sample inputs
 
         Returns
         -------
         densities : array
-            TYPE
-            DESCRIPTION.
+            The probability densities of each sample from the Multivariate
+            Normal distribution's pdf
 
         """
         densities = np.ones((len(samples), 1))

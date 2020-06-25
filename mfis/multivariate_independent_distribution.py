@@ -1,5 +1,10 @@
 """
-    Coming soon.
+The :mod:'mfis.multivariate_independent_distribution' combines a series of
+indepedent continuous variable distributions to be used as an
+input distribution.
+
+@author:    D. Austin Cole <david.a.cole@nasa.gov>
+            James E. Warner <james.e.warner@nasa.gov>
 """
 import numpy as np
 from mfis.input_distribution import InputDistribution
@@ -7,55 +12,65 @@ from mfis.input_distribution import InputDistribution
 
 class MultivariateIndependentDistribution(InputDistribution):
     """
-    Coming soon.
+    A multivariate independent distribution consisting of a series of
+    indepdendent continuous distributions. It is used to describe the
+    distribution of inputs.
+    
+    Parameters
+    ----------
+    distributions: list
+        A series of continuous distribution instances.
+   
+    seed: int
+        The seed number
     """
-    def __init__(self, list_of_distributions, seed=None):
-        self.distributions_list_ = list_of_distributions
+    def __init__(self, distributions, seed=None):
+        self.distributions_list_ = distributions
         if seed is not None:
             np.random.seed(seed)
 
-    def draw_samples(self, num_samples):
+    def draw_samples(self, n_samples):
         """
-        Coming soon.
+        Draws and combines random input samples from the separate 
+        continuous distributions.
 
         Parameters
         ----------
-        num_samples : int
-            TYPE
-            DESCRIPTION.
+        n_samples : int
+            Number of samples to draw
 
         Returns
         -------
         samples : array
-            TYPE
-            DESCRIPTION.
+            An n_samples by d (number of distributions) array of sample
+            inputs from the Multivariate Independent distribution
 
         """
-        samples = np.zeros((num_samples, len(self.distributions_list_)))
+        samples = np.zeros((n_samples, len(self.distributions_list_)))
 
         for i in range(len(self.distributions_list_)):
-            samples[:, i] = self.distributions_list_[i].rvs(num_samples)
+            samples[:, i] = self.distributions_list_[i].rvs(n_samples)
 
         return samples
 
     def evaluate_pdf(self, samples):
         """
-        Coming soon.
+        Evaluates the probability density function of Multivariate
+        Indepdendent distribution
 
         Parameters
         ----------
         samples : array
-            TYPE
-            DESCRIPTION.
+            An n_samples by d array of sample inputs
 
         Returns
         -------
         densities : array
-            TYPE
-            DESCRIPTION.
+            The probability densities of each sample from the Multivariate
+            Independent distribution's pdf
 
         """
-        densities = np.ones((samples.shape[0], 1))
+        densities = np.ones((samples.shape[0],))
 
         for i in range(len(self.distributions_list_)):
             densities *= self.distributions_list_[i].pdf(samples)
