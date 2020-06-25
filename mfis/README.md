@@ -39,12 +39,12 @@
 * **seed**: *optional* attribute to set the random seed
 ## Methods:
 * **draw_samples**(*self, n_samples*)
-        * Draws and returns an array of *n_samples* from a multivariate normal distribution
-        * n_samples: int of samples to draw
+	* Draws and returns an array of *n_samples* from a multivariate normal distribution
+	* n_samples: int of samples to draw
 	* **returns**: *n_samples* by *d* array of samples
 * **evaluate_pdf**(*self, samples*)
-        * Evaluates the multivariate normal distribution for the samples provided and returns an array of probability densities
-        * samples: an array of input samples
+	* Evaluates the multivariate normal distribution for the samples provided and returns an array of probability densities
+	* samples: an array of input samples
 	* **returns**: array of probability densities for each of the samples (length corresponds to number of *samples*)
 
 # BiasingDistribution class:
