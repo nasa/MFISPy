@@ -16,30 +16,28 @@ from mfis.input_distribution import InputDistribution
 class MultiFidelityIS:
     """
     Calculates the multi-fidelity importance sampling failure of probability
-    estimate. Uses a second batch of samples, their high-fidelity responses,
+    estimate. Uses a batch of samples, their high-fidelity responses,
     and input and biasing distributions of the inputs.
 
     Parameters
     ----------
-    limit_state: float, int, or function
+    limit_state: float, int, or functionl; optional
         A scalar or function applied to the response that distinguishes
         failures from non-failures. If a scalar is provided, outputs less than
         the limit state are considered failures. If a function is provided,
         values of the function less than zero are considered failures.
+        The default is None.
 
-    input_distribution: instance of a probability distribution
+    input_distribution: instance of a probability distribution; optional
         A distribution of one or more random variables that reflects the
         distribution of the input(s). Must have InputDistribution as it's
-        base class.
+        base class. The default is None.
 
     biasing_distribution: instance of a class whose base class is
-    InputDistribution
+    InputDistribution; optional
         A distribution of one of more random variables that reflects the
         biased distribution of the input(s). Usually, an instance of
-        BiasingDistribution.
-    
-    seed: int
-        The seed number
+        BiasingDistribution. The default is None.
     """
     def  __init__(self, limit_state=None, input_distribution=None,
                   biasing_distribution=None):
@@ -53,16 +51,16 @@ class MultiFidelityIS:
         else:
             self._biasing_distribution = None
 
+
     def calc_importance_weights(self, inputs):
         """
         Calculates the importance weights of each input based on the ratio of
-        probability densities between the input and biasing distribution.
+        probability densities between the input and biasing distributions.
 
         Parameters
         ----------
         inputs : array
-            An n_samples by d array of inputs used to evaluate the
-            high-fidelity model
+            An array of inputs used to evaluate the high-fidelity model
 
         Raises
         ------
@@ -74,8 +72,7 @@ class MultiFidelityIS:
         Returns
         -------
         importance weights : array
-            A series of importance weights of length n_samples.
-
+            A series of importance weights of same length as the inputs.
         """
         if self._input_distribution is None or \
             self._biasing_distribution is None:
@@ -100,11 +97,11 @@ class MultiFidelityIS:
         outputs : array
             An array of length n_samples that contains the outputs from the
             high-fidelity model
-        input_densities : array, optional
+        input_densities : array; optional
             An array of length n_samples that contains the probability
             densities of the inputs from the input distribution. The default
             is None.
-        biasing_densities : array, optional
+        biasing_densities : array; optional
             An array of length n_samples that contains the probability
             densities of the inputs from the biasing distributin. The default
             is None.
@@ -116,7 +113,6 @@ class MultiFidelityIS:
             failure output from the high-fidelity model.
         rmse : float
             The root mean squared error of the probability of failure estimate.
-
         """
         if input_densities is None or biasing_densities is None:
             input_densities, biasing_densities = \

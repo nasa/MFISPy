@@ -24,8 +24,8 @@ class MultivariateNormalDistribution(InputDistribution):
     cov: 2D array
         The d by d positive-definite covariance matrix for the distribution
         
-    seed: int
-        The seed number
+    seed: int; optional
+        The seed number. The default is None.
     """
     def __init__(self, mean, cov, seed=None):
         self.mean_ = mean

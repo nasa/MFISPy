@@ -21,8 +21,8 @@ class MultivariateIndependentDistribution(InputDistribution):
     distributions: list
         A series of continuous distribution instances.
    
-    seed: int
-        The seed number
+    seed: int; optional
+        The seed number. The default is None.
     """
     def __init__(self, distributions, seed=None):
         self.distributions_list_ = distributions
@@ -44,7 +44,6 @@ class MultivariateIndependentDistribution(InputDistribution):
         samples : array
             An n_samples by d (number of distributions) array of sample
             inputs from the Multivariate Independent distribution
-
         """
         samples = np.zeros((n_samples, len(self.distributions_list_)))
 
