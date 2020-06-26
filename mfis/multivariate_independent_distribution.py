@@ -25,7 +25,7 @@ class MultivariateIndependentDistribution(InputDistribution):
         The seed number. The default is None.
     """
     def __init__(self, distributions, seed=None):
-        self.distributions_list_ = distributions
+        self.distributions_ = distributions
         if seed is not None:
             np.random.seed(seed)
 
@@ -45,10 +45,10 @@ class MultivariateIndependentDistribution(InputDistribution):
             An n_samples by d (number of distributions) array of sample
             inputs from the Multivariate Independent distribution
         """
-        samples = np.zeros((n_samples, len(self.distributions_list_)))
+        samples = np.zeros((n_samples, len(self.distributions_)))
 
-        for i in range(len(self.distributions_list_)):
-            samples[:, i] = self.distributions_list_[i].rvs(n_samples)
+        for i in range(len(self.distributions_)):
+            samples[:, i] = self.distributions_[i].rvs(n_samples)
 
         return samples
 
@@ -71,7 +71,7 @@ class MultivariateIndependentDistribution(InputDistribution):
         """
         densities = np.ones((samples.shape[0],))
 
-        for i in range(len(self.distributions_list_)):
-            densities *= self.distributions_list_[i].pdf(samples)
+        for i in range(len(self.distributions_)):
+            densities *= self.distributions_[i].pdf(samples[:,i])
 
         return densities

@@ -244,6 +244,7 @@ class BiasingDistribution(InputDistribution):
         -------
         None.
         """
+        
         covariance_type = self._check_covariance_types_are_valid(
             covariance_type)
 
@@ -259,6 +260,7 @@ class BiasingDistribution(InputDistribution):
                     self._check_covariance_type_is_valid(covar_type)
             else:
                 self._check_covariance_type_is_valid(covariance_type)
+                covariance_type = [covariance_type]
 
         return covariance_type
 
