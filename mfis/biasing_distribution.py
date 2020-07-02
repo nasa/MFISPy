@@ -1,6 +1,6 @@
 """
-The :mod:'mfis.biasing_distribution' builds a probability distribution for 
-the inputs that is biased towards the failure region. 
+The :mod:'mfis.biasing_distribution' builds a probability distribution for
+the inputs that is biased towards the failure region.
 
 @author:    D. Austin Cole <david.a.cole@nasa.gov>
             James E. Warner <james.e.warner@nasa.gov>
@@ -30,28 +30,25 @@ class BiasingDistribution(InputDistribution):
         A scalar or function applied to the response that distinguishes
         failures from non-failures. If a scalar is provided, outputs less than
         the limit state are considered failures. If a function is provided,
-        values of the function less than zero are considered failures. 
+        values of the function less than zero are considered failures.
         The default is None.
 
     input_distribution: instance of a probability distribution; optional
         A distribution of one or more random variables that reflects the
-        distribution of the input(s). Must have InputDistribution as it's
+        distribution of the input(s). Should have InputDistribution as it's
         base class. The default is None.
 
     seed: int; optional
         The seed number. The default is None.
     """
     def __init__(self, trained_surrogate=None, limit_state=None,
-                 input_distribution=None, seed=None):
+                 input_distribution=None):
 
         self._surrogate = trained_surrogate
         self._limit_state = limit_state
-        if isinstance(input_distribution, InputDistribution):
-            self._input_distribution = input_distribution
-        else:
-            self._input_distribution = None
-        if seed is not None:
-            np.random.seed(seed)
+        self._input_distribution = input_distribution
+        if input_distribution is not None:
+            self._input_dim = input_distribution.draw_samples(1).shape[1]
         self._surrogate_inputs = None
         self.mixture_model_ = None
 
@@ -65,7 +62,7 @@ class BiasingDistribution(InputDistribution):
         for various numbers of clusters and/or covariance types. Takes the
         Mixture Model with the highest average log-likelihood and assigns to
         the attribute 'mixture_model_'.
-        
+
         Parameters
         ----------
         n_samples : int
@@ -75,15 +72,15 @@ class BiasingDistribution(InputDistribution):
             The maximum number of clusters used to train the Gaussian Mixture
             Model. The default is 10.
         covariance_type : str or list; optional
-            One or multiple types of covariance structures to use to find the
-            best Gaussian Mixture Model. The default is all possible types:
+            One or multiple types of covariance structures to use when finding
+            the best Gaussian Mixture Model. The default is all possible types:
             ['full', 'spherical', 'tied', 'diag'].
         min_failures : int; optional
-            The minimum number of failures that are needed before proceeding
-            to fit Gaussian Mixture Models. The default is 3.
+            The minimum number of failures needed before proceeding to fit
+            Gaussian Mixture Models. The default is 3.
         max_sample_batches : int; optional
-            The maximum number of sample batches to draw. A new batch will be
-            drawn if the minimum number of failures is not yet found from
+            The maximum number of sample batches to draw. A new batch is
+            drawn if the minimum number of failures is not reached from
             previous batches of samples. The default is 10.
 
         Returns
@@ -101,22 +98,22 @@ class BiasingDistribution(InputDistribution):
                                                  min_failures=3,
                                                  max_sample_batches=10):
         """
-        Draws batches of samples from the input distribution, predicts the 
+        Draws batches of samples from the input distribution, predicts the
         outputs using the surrogate, and determines which outputs are failures.
         Batches are drawn until m failures are found or the maximum number of
-        sample batches is reached. 
-        
+        sample batches is reached.
+
         Parameters
         ----------
         n_samples : int
             The number of samples to be drawn from the input distribution and
             then evaluated with the trained surrogate model.
         min_failures : int; optional
-            The minimum number of failures that are needed before proceeding
-            to fit the Gaussian Mixture Model. The default is 3.
+            The minimum number of failures needed before proceeding to fit
+            the Gaussian Mixture Model. The default is 3.
         max_sample_batches : int; optional
-            The maximum number of sample batches to draw. A new batch will be 
-            drawn if the minimum number of failures is not yet found from
+            The maximum number of sample batches to draw. A new batch will be
+            drawn if the minimum number of failures is not reached from
             previous batches of samples. The default is 10.
 
         Raises
@@ -128,10 +125,10 @@ class BiasingDistribution(InputDistribution):
         Returns
         -------
         failure_inputs : array
-            The set of at least m inputs from the input distribution that 
+            The set of at least m inputs from the input distribution that
             have surrogate predictions in the failure region.
         """
-        failure_inputs = []
+        failure_inputs = np.empty((0, self._input_dim))
         batches = 1
         while (len(failure_inputs) < min_failures and
                batches <= max_sample_batches):
@@ -139,17 +136,11 @@ class BiasingDistribution(InputDistribution):
             new_fail_inputs = \
                 self.get_failed_inputs_from_surrogate_draws(n_samples)
 
-            if new_fail_inputs is not None:
-                if len(failure_inputs) == 0:
-                    failure_inputs = new_fail_inputs
-                else:
-                    new_fail_inputs = new_fail_inputs.reshape(
-                        len(new_fail_inputs), -1)
-                    failure_inputs = np.vstack((failure_inputs,
-                                                new_fail_inputs))
+            failure_inputs = np.append(failure_inputs, new_fail_inputs, axis=0)
+
             batches = batches + 1
 
-        if len(failure_inputs) < min_failures:
+        if failure_inputs.shape[0] < min_failures:
             raise ValueError(f"Less than {min_failures} failures found in "
                              f"{max_sample_batches*n_samples} surrogate"
                              " draws")
@@ -158,7 +149,7 @@ class BiasingDistribution(InputDistribution):
 
     def get_failed_inputs_from_surrogate_draws(self, n_samples):
         """
-        Draws a set of samples from the input distribution, predicts the 
+        Draws a set of samples from the input distribution, predicts the
         outputs using the surrogate, and determines the inputs that correspond
         to outputs in the failure region.
 
@@ -171,49 +162,67 @@ class BiasingDistribution(InputDistribution):
         Returns
         -------
         failure_inputs : array
-            The set of inputs from the input distribution that 
+            The set of inputs from the input distribution that
             have surrogate predictions in the failure region.
         """
-        surrogate_predictions = self._evaluate_surrogate(n_samples)
-        failure_inputs = self._find_failures(self._surrogate_inputs,
-                                             surrogate_predictions)
+        input_samples = self._draw_input_samples(n_samples)
+        surrogate_predictions = self._evaluate_surrogate(input_samples)
+        failure_inputs = self.find_failures(input_samples,
+                                            surrogate_predictions)
         return failure_inputs
 
 
-    def _evaluate_surrogate_decorator(func):
+    def _draw_input_samples_decorator(func):
         def wrapper(bias_dist, n_samples):
             if bias_dist._input_distribution is None:
                 raise ValueError("No input distribution exists.")
-            if bias_dist._surrogate is None:
-                raise ValueError("Biasing Distribution not initialized"
-                                 " with surrogate.")
             return func(bias_dist, n_samples)
         return wrapper
 
 
+    @_draw_input_samples_decorator
+    def _draw_input_samples(self, n_samples):
+        input_samples = self._input_distribution.draw_samples(n_samples)
+
+        return input_samples
+
+
+    def _evaluate_surrogate_decorator(func):
+        def wrapper(bias_dist, samples):
+            if bias_dist._surrogate is None:
+                raise ValueError("Biasing Distribution not initialized"
+                                 " with surrogate.")
+            return func(bias_dist, samples)
+        return wrapper
+
+
     @_evaluate_surrogate_decorator
-    def _evaluate_surrogate(self, n_samples):
-        self._surrogate_inputs = \
-                    self._input_distribution.draw_samples(n_samples)
+    def _evaluate_surrogate(self, samples):
         surrogate_predictions = \
-                    self._surrogate.predict(self._surrogate_inputs)
+                    self._surrogate.predict(samples)
+        if surrogate_predictions.ndim == 1:
+            surrogate_predictions = \
+                surrogate_predictions.reshape((samples.shape[0], 1))
 
         return surrogate_predictions
 
 
-    def _find_failures(self, inputs, outputs):
-        if self._limit_state is not None:
-            if isfunction(self._limit_state):
-                failure_indexes = self._limit_state(outputs) < 0
-            else:
-                failure_indexes = outputs < self._limit_state
+    def _find_failures_decorator(func):
+        def wrapper(bias_dist, inputs, outputs):
+            if bias_dist._limit_state is None:
+                raise ValueError("No limit state provided.")
+            return func(bias_dist, inputs, outputs)
+        return wrapper
 
-            if len(failure_indexes.flatten()) > 0:
-                failure_inputs = inputs[failure_indexes.flatten(), :]
-            else:
-                failure_inputs = None
+
+    @_find_failures_decorator
+    def find_failures(self, inputs, outputs):
+        if isfunction(self._limit_state):
+            failure_indexes = self._limit_state(outputs) < 0
         else:
-            raise ValueError("No limit state found to determine failures.")
+            failure_indexes = np.all(outputs < self._limit_state, axis=1)
+
+        failure_inputs = inputs[failure_indexes.flatten(), :]
 
         return failure_inputs
 
@@ -226,25 +235,25 @@ class BiasingDistribution(InputDistribution):
         for various numbers of clusters and/or covariance types. Takes the
         Mixture Model with the highest average log-likelihood and assigns to
         the attribute 'mixture_model_'.
-        
+
         Parameters
         ----------
         failed_inputs : array
-            The set of inputs from the input distribution that 
-            have predictions in the failure region.
+            The set of inputs from the input distribution that have
+            predictions in the failure region.
         max_clusters : int; optional
             The maximum number of clusters used to train the Gaussian Mixture
             Model. The default is 10.
         covariance_type : str or list; optional
-            One or multiple types of covariance structures to use to find the
-            best Gaussian Mixture Model. The default is all possible types:
+            One or multiple types of covariance structures to use when finding
+            the best Gaussian Mixture Model. The default is all possible types:
             ['full', 'spherical', 'tied', 'diag'].
 
         Returns
         -------
         None.
         """
-        
+
         covariance_type = self._check_covariance_types_are_valid(
             covariance_type)
 
@@ -254,13 +263,12 @@ class BiasingDistribution(InputDistribution):
 
 
     def _check_covariance_types_are_valid(self, covariance_type):
-        if covariance_type != POSSIBLE_COVARIANCES:
-            if isinstance(covariance_type, (list, tuple)):
-                for i, covar_type in enumerate(covariance_type):
-                    self._check_covariance_type_is_valid(covar_type)
-            else:
-                self._check_covariance_type_is_valid(covariance_type)
-                covariance_type = [covariance_type]
+        if isinstance(covariance_type, (list, tuple)):
+            for i, covar_type in enumerate(covariance_type):             
+                self._check_covariance_type_is_valid(covar_type)
+        else:
+            self._check_covariance_type_is_valid(covariance_type)
+            covariance_type = [covariance_type]
 
         return covariance_type
 
@@ -284,22 +292,19 @@ class BiasingDistribution(InputDistribution):
         return mix_model.best_estimator_
 
 
-    def _check_distribution_exists_decorator(func):
+    def _check_bias_distribution_exists_decorator(func):
         def wrapper(bias_dist, *args):
-            if bias_dist.mixture_model_ is None and \
-                bias_dist._input_distribution is None:
-                raise ValueError("No mixture model or "
-                                 "input distribution exists.")
+            if bias_dist.mixture_model_ is None:
+                raise ValueError("No mixture model distribution exists.")
             return func(bias_dist, *args)
         return wrapper
 
 
-    @_check_distribution_exists_decorator
+    @_check_bias_distribution_exists_decorator
     def draw_samples(self, n_samples):
         """
-        Draws random samples from the Gaussian Mixture Model (if fit). 
-        Otherwise, random samples are drawn from the input distribution.
-        
+        Draws random samples from the Gaussian Mixture Model.
+
         Parameters
         ----------
         n_samples : array
@@ -308,23 +313,20 @@ class BiasingDistribution(InputDistribution):
         Returns
         -------
         samples : array
-            An n_samples by d array of sample inputs from the
-            Gaussian Mixture Model (if fit) or 
-            input distribution
+            An n_samples by d array of sample inputs from the Gaussian
+            Mixture Model
         """
-        if self.mixture_model_ is not None:
-            input_samples = self.mixture_model_.sample(n_samples)[0]
-        else:
-            input_samples = self._input_distribution.draw_samples(n_samples)
+        input_samples = self.mixture_model_.sample(n_samples)[0]
+
         return input_samples
 
 
-    @_check_distribution_exists_decorator
+    @_check_bias_distribution_exists_decorator
     def evaluate_pdf(self, samples):
         """
         Evaluates the probability density function of the Gaussian Mixture
-        Model (if fit) or input distribution for a set of samples.
-        
+        Model for a set of samples.
+
         Parameters
         ----------
         samples : array
@@ -333,13 +335,10 @@ class BiasingDistribution(InputDistribution):
         Returns
         -------
         samples_densities : array
-            The probability densities of each of the inputs based on the 
-            Gaussian Mixture Model (if fit) or input distribution.
+            The probability densities of each of the inputs based on the
+            Gaussian Mixture Model.
         """
-        if self.mixture_model_ is not None:
-            samples_densities = self._evaluate_mixture_model_pdf(samples)
-        else:
-            samples_densities = self._input_distribution.evaluate_pdf(samples)
+        samples_densities = self._evaluate_mixture_model_pdf(samples)
 
         return samples_densities
 
@@ -354,7 +353,7 @@ class BiasingDistribution(InputDistribution):
     def save(self, filename):
         """
         Saves the object with all it's attributes.
-        
+
         Parameters
         ----------
         filename : filename
@@ -371,7 +370,7 @@ class BiasingDistribution(InputDistribution):
     def load(self, filename):
         """
         Loads the attributes from a BiasingDistribution instance.
-        
+
         Parameters
         ----------
         filename : filename

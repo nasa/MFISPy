@@ -1,6 +1,6 @@
 from .input_distribution import InputDistribution
 from .biasing_distribution import BiasingDistribution
 from .multifidelity_importance_sampling import MultiFidelityIS
-from .multivariate_independent_distribution import MultivariateIndependentDistribution
-from .multivariate_normal_distribution import MultivariateNormalDistribution
+from .mv_independent_distribution import MVIndependentDistribution
+from .mv_normal_distribution import MVNormalDistribution
 

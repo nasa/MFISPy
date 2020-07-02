@@ -21,31 +21,27 @@ class MultiFidelityIS:
 
     Parameters
     ----------
-    limit_state: float, int, or functionl; optional
-        A scalar or function applied to the response that distinguishes
+    limit_state: float, int, or functionl
+        A scalar or function applied to the response(s) that distinguishes
         failures from non-failures. If a scalar is provided, outputs less than
         the limit state are considered failures. If a function is provided,
         values of the function less than zero are considered failures.
-        The default is None.
 
     input_distribution: instance of a probability distribution; optional
         A distribution of one or more random variables that reflects the
-        distribution of the input(s). Must have InputDistribution as it's
+        distribution of the input(s). Should have InputDistribution as it's
         base class. The default is None.
 
-    biasing_distribution: instance of a class whose base class is
-    InputDistribution; optional
+    biasing_distribution: instance of a probability distribution; optional
         A distribution of one of more random variables that reflects the
         biased distribution of the input(s). Usually, an instance of
-        BiasingDistribution. The default is None.
+        BiasingDistribution. Should have InputDistribution as it's
+        base class. The default is None.
     """
-    def  __init__(self, limit_state=None, input_distribution=None,
+    def  __init__(self, limit_state, input_distribution=None,
                   biasing_distribution=None):
         self._limit_state = limit_state
-        if isinstance(input_distribution, InputDistribution):
-            self._input_distribution = input_distribution
-        else:
-            self._input_distribution = None
+        self._input_distribution = input_distribution
         if isinstance(biasing_distribution, InputDistribution):
             self._biasing_distribution = biasing_distribution
         else:
@@ -84,8 +80,8 @@ class MultiFidelityIS:
         return input_density.flatten()/mm_density.flatten()
 
 
-    def mfis_estimate(self, inputs, outputs, input_densities=None,
-                      biasing_densities=None):
+    def get_failure_prob_estimate(self, inputs, outputs,
+                                  importance_weights=None):
         """
         Calculates the probability of failure probability estimate.
 
@@ -95,15 +91,11 @@ class MultiFidelityIS:
             An n_samples by d array of inputs used to evaluate the
             high-fidelity model
         outputs : array
-            An array of length n_samples that contains the outputs from the
+            An 2D array with n_samples rows that contains the outputs from the
             high-fidelity model
-        input_densities : array; optional
-            An array of length n_samples that contains the probability
-            densities of the inputs from the input distribution. The default
-            is None.
-        biasing_densities : array; optional
-            An array of length n_samples that contains the probability
-            densities of the inputs from the biasing distributin. The default
+        importance_weights : array; optional
+            A 1D array of length n_samples that contains the importance weights
+            (input density / biasing density) of the inputs. The default
             is None.
 
         Returns
@@ -114,18 +106,13 @@ class MultiFidelityIS:
         rmse : float
             The root mean squared error of the probability of failure estimate.
         """
-        if input_densities is None or biasing_densities is None:
-            input_densities, biasing_densities = \
-                self._evaluate_pdfs(inputs, input_densities, biasing_densities)
-
-        importance_weights = \
-                  self._calc_importance_weights_with_densities(
-                      input_densities, biasing_densities)
+        if importance_weights is None:
+            importance_weights = self.calc_importance_weights(inputs)
 
         failure_indicators = self._find_failure_indicators(outputs)
         failure_weights = importance_weights * failure_indicators
 
-        probability_of_failure = np.sum(failure_weights)/len(inputs)
+        probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
         sqaured_errors = (failure_weights-probability_of_failure)**2
         rmse = np.sqrt(np.mean(sqaured_errors)/len(inputs))
 

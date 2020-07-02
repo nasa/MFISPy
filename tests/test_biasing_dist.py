@@ -11,7 +11,7 @@ def mock_bias_dist(mocker):
     return bias_dist
 
 
-def test_fit_calls_mixture_moodel_grid_search(mocker, mock_bias_dist):
+def test_fit_calls_mixture_model_grid_search(mocker, mock_bias_dist):
     mock_surrogate_failed_inputs = mocker.Mock(return_value=np.array([2, 3]))
     mock_bias_dist.get_m_failed_inputs_from_surrogate_draws = \
         mock_surrogate_failed_inputs
@@ -26,11 +26,12 @@ def test_fit_calls_mixture_moodel_grid_search(mocker, mock_bias_dist):
 
 
 def test_get_m_failed_inputs_ends_with_error(mocker, mock_bias_dist):
-    side_effects = [None, np.ones((1, 3)), None,
+    side_effects = [np.empty((0, 3)), np.ones((1, 3)), np.empty((0, 3)),
                     np.ones((2, 3)), np.ones((4, 3))]
     mock_surrogate_failed_inputs = mocker.Mock(side_effect=side_effects)
     mock_bias_dist.get_failed_inputs_from_surrogate_draws = \
         mock_surrogate_failed_inputs
+    mock_bias_dist._input_dim = 3
 
     with pytest.raises(ValueError):
         mock_bias_dist.get_m_failed_inputs_from_surrogate_draws(
@@ -38,12 +39,13 @@ def test_get_m_failed_inputs_ends_with_error(mocker, mock_bias_dist):
 
 
 def test_get_m_failed_inputs(mocker, mock_bias_dist):
-    side_effects = [None, np.ones((1, 3)), None,
+    side_effects = [np.empty((0, 3)), np.ones((1, 3)), np.empty((0, 3)),
                     np.ones((2, 3)), np.ones((4, 3)), np.ones((10, 3))]
     mock_surrogate_failed_inputs = mocker.Mock(side_effect=side_effects)
     mock_bias_dist.get_failed_inputs_from_surrogate_draws = \
         mock_surrogate_failed_inputs
-
+    mock_bias_dist._input_dim = 3
+    
     min_failures = 6
     failed_inputs = \
         mock_bias_dist.get_m_failed_inputs_from_surrogate_draws(
@@ -56,16 +58,17 @@ def test_get_m_failed_inputs(mocker, mock_bias_dist):
 def test_surrogate_failed_inputs_returned(mocker, mock_bias_dist):
     mock_evaluate_surrogate = mocker.Mock(return_value=1)
     mock_bias_dist._evaluate_surrogate = mock_evaluate_surrogate
+    mock_bias_dist._draw_input_samples = mock_evaluate_surrogate
 
     failures = np.array([1, 2, 3])
     mock_find_failures = mocker.Mock(return_value=failures)
-    mock_bias_dist._find_failures = mock_find_failures
+    mock_bias_dist.find_failures = mock_find_failures
 
     failed_inputs_received = \
             mock_bias_dist.get_failed_inputs_from_surrogate_draws(
                 n_samples=10)
 
-    assert (failed_inputs_received == failures).all
+    np.testing.assert_array_almost_equal(failed_inputs_received, failures)
 
 
 def test_evaluate_surrogate_raises_error_with_no_surrogate(mocker):
@@ -75,67 +78,67 @@ def test_evaluate_surrogate_raises_error_with_no_surrogate(mocker):
     mocked_input_distribution().draw_samples.return_value = np.ones((3, 2))
     bias_dist._input_distribution = mocked_input_distribution
 
+    dummy_input_samples = np.ones((3, 2))
     with pytest.raises(ValueError):
-        bias_dist._evaluate_surrogate(n_samples=4)
+        bias_dist._evaluate_surrogate(samples=dummy_input_samples)
 
 
-def test_evaluate_surrogate_error_with_no_input_dist(mocker,
+def test_draw_input_samples_error_with_no_input_dist(mocker,
                                                      mock_bias_dist):
     with pytest.raises(ValueError):
-        mock_bias_dist._evaluate_surrogate(n_samples=4)
+        mock_bias_dist._draw_input_samples(n_samples=4)
 
 
 def test_evaluate_surrogate_runs(mocker):
     mock_surrogate = mocker.Mock()
-    mock_surrogate().predict.return_value = np.array([-2, -1, 0])
-
-    mocked_input_distribution = mocker.Mock()
-    mocked_input_distribution().draw_samples.return_value = np.ones((3, 2))
+    mock_surrogate.predict.return_value = np.array([-2, -1, 0])
 
     failure_threshold = -0.1
     mocked_BiasingDist = BiasingDistribution(trained_surrogate=mock_surrogate,
                                              limit_state=failure_threshold)
-    mocked_BiasingDist._input_distribution = mocked_input_distribution
 
-    surrogate_samples = mocked_BiasingDist._evaluate_surrogate(n_samples=3)
-
-    assert (surrogate_samples == np.array([-2, -1, 0])).all
+    dummy_samples = np.ones((3, 2))
+    surrogate_samples = mocked_BiasingDist._evaluate_surrogate(samples=
+                                                               dummy_samples)
+    
+    np.testing.assert_array_almost_equal(surrogate_samples,
+                                         np.array([-2, -1, 0]))
 
 
 def test_find_failures_raise_error_with_no_limit_state():
     bias_dist = BiasingDistribution()
     n_samples = 10
     dummy_inputs = np.ones((n_samples, 3))
-    dummy_outputs = np.zeros((n_samples,))
+    dummy_outputs = np.zeros((n_samples,2))
 
     with pytest.raises(ValueError):
-        bias_dist._find_failures(dummy_inputs, dummy_outputs)
+        bias_dist.find_failures(dummy_inputs, dummy_outputs)
 
 
 def test_find_failures_with_threshold(mocker, mock_bias_dist):
     dummy_inputs = [ele for ele in [1, 2, 3, 4, 5, 6] for i in range(3)]
     dummy_inputs = np.array(dummy_inputs).reshape((6, 3))
-    dummy_outputs = np.array([2, -3, -4, 6, 8, 1])
+    dummy_outputs = np.array([2, -3, -4, 6, 8, 1]).reshape((6,1))
 
     expected_failures = np.array([[2, 2, 2], [3, 3, 3]])
-    failures = mock_bias_dist._find_failures(dummy_inputs, dummy_outputs)
+    failures = mock_bias_dist.find_failures(dummy_inputs, dummy_outputs)
 
-    assert (expected_failures == failures).all()
+    np.testing.assert_array_almost_equal(expected_failures, failures)
 
 
 def test_find_failures_with_limit_state_function():
     dummy_inputs = [ele for ele in [1, 2, 3, 4, 5, 6] for i in range(3)]
     dummy_inputs = np.array(dummy_inputs).reshape((6, 3))
-    dummy_outputs = np.array([2, -3, -4, 6, 8, 1])
-    def limit_state(input):
-        return input + .1
+    dummy_outputs = np.array([2, -3, -4, 6, 8, 1]).reshape((6,1))
+    def limit_state(outputs):
+        return outputs + .1
 
     bias_dist = BiasingDistribution(limit_state=limit_state)
 
     expected_failures = np.array([[2, 2, 2], [3, 3, 3]])
-    failures = bias_dist._find_failures(dummy_inputs, dummy_outputs)
+    failures = bias_dist.find_failures(dummy_inputs, dummy_outputs)
 
-    assert (expected_failures == failures).all()
+    np.testing.assert_array_almost_equal(expected_failures, failures)
 
 
 @pytest.mark.parametrize("cov_type", ["dia", -1])
@@ -203,21 +206,6 @@ def test_check_distribution_exists_decorator_raises_error(mock_bias_dist):
         mock_bias_dist.draw_samples(2)
 
 
-def test_densities_from_input_dist_are_correct_length(mocker,
-                                                      mock_bias_dist):
-    n_samples = 20
-    dummy_samples = np.ones((n_samples, 3))
-
-    mocked_input_distribution = mocker.Mock()
-    mocked_input_distribution.evaluate_pdf.return_value = \
-        np.ones((n_samples, 1))
-    mock_bias_dist._input_distribution = mocked_input_distribution
-
-    densities = mock_bias_dist.evaluate_pdf(dummy_samples)
-
-    assert len(densities) == n_samples
-
-
 def test_densities_from_mixture_model_are_correct_length(mocker,
                                                          mock_bias_dist):
     mock_mixture_model = mocker.Mock()
@@ -233,20 +221,6 @@ def test_densities_from_mixture_model_are_correct_length(mocker,
     assert len(densities) == n_samples
 
 
-def test_samples_drawn_from_input_dist_are_correct_shape(mocker,
-                                                         mock_bias_dist):
-    n_samples = 20
-    return_samples = np.ones((n_samples, 3))
-
-    mocked_input_distribution = mocker.Mock()
-    mocked_input_distribution.draw_samples.return_value = return_samples
-    mock_bias_dist._input_distribution = mocked_input_distribution
-
-    samples = mock_bias_dist.draw_samples(n_samples)
-
-    assert (samples == return_samples).all()
-
-
 def test_samples_drawn_from_mixture_model_are_correct_shape(mocker,
                                                             mock_bias_dist):
     mock_mixture_model = mocker.Mock()
@@ -258,7 +232,7 @@ def test_samples_drawn_from_mixture_model_are_correct_shape(mocker,
     mock_bias_dist.mixture_model_ = mock_mixture_model
 
     samples = mock_bias_dist.draw_samples(n_samples)
-    assert (samples == return_samples).all()
+    np.testing.assert_array_almost_equal(samples, return_samples)
 
 
 def test_saved_file(mocker):

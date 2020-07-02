@@ -1,49 +1,53 @@
-# -*- coding: utf-8 -*-
 """
-Created on Wed Jun 10 11:26:19 2020
+The :mod:'mfis.input_distribution' hold the Abstract Base Class for an
+input distribution
 
-@author: dacole2
+@author:    D. Austin Cole <david.a.cole@nasa.gov>
+            James E. Warner <james.e.warner@nasa.gov>
 """
 from abc import ABCMeta, abstractmethod
 
 class InputDistribution(metaclass=ABCMeta):
     """
-
-    Parameters
-    ----------
-    None.
-
+    Creates a probability distribution that serves two functions:
+        1) Draws a specified number of random samples from the distribution
+            and returns the samples in an array.
+        2) Evaluates the distribution's density at a given array of samples
+            and returns the densities.
     """
-    def __init__(self):
-        pass
 
     @abstractmethod
-    def draw_samples(self, num_samples):
+    def draw_samples(self, n_samples):
         """
+        Performs independent random draws from the distribution.
 
         Parameters
         ----------
-        num_samples : TYPE
-            DESCRIPTION.
+        n_samples : int
+            Number of samples to draw
 
         Returns
         -------
-        None.
-
+        samples: array
+            An n_samples by d (number of input dimensions) array of sample
+            inputs from the Input Distribution
         """
 
 
     @abstractmethod
     def evaluate_pdf(self, samples):
         """
+        Evaluates the probability density function of the distribution
 
         Parameters
         ----------
-        samples : TYPE
-            DESCRIPTION.
+        samples : array
+            An n_samples by d array of sample inputs
 
         Returns
         -------
-        None.
+        densities : array
+            The probability densities of each sample from the Input
+            distribution's pdf
 
         """

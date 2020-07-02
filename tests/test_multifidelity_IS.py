@@ -12,7 +12,8 @@ def test_calc_importance_weights(mocker):
     mock_bias_distribution = mocker.create_autospec(InputDistribution)
     mock_bias_distribution.evaluate_pdf.return_value = biasing_dist_densities
 
-    importance_sampling = MultiFidelityIS(biasing_distribution= \
+    importance_sampling = MultiFidelityIS(limit_state=0,
+                                          biasing_distribution= \
                                           mock_bias_distribution,
                                           input_distribution= \
                                               mock_input_distribution)
@@ -21,11 +22,11 @@ def test_calc_importance_weights(mocker):
 
     weights = importance_sampling.calc_importance_weights(1)
 
-    assert (expected_weights == weights).all()
+    np.testing.assert_array_almost_equal(expected_weights, weights)
 
 
 def test_calc_importance_weights_no_dists_raises_error(mocker):
-    importance_sampling = MultiFidelityIS()
+    importance_sampling = MultiFidelityIS(limit_state=0)
     dummy_inputs = np.ones((10, 3))
 
     with pytest.raises(ValueError):
@@ -36,7 +37,7 @@ def test_calc_importance_weights_with_densities():
     input_densities = np.array([.01, .1, 1])
     biasing_dist_densities = np.array([4, 2, .5])
 
-    importance_sampling = MultiFidelityIS()
+    importance_sampling = MultiFidelityIS(limit_state=0)
 
     expected_weights = input_densities/biasing_dist_densities
 
@@ -44,7 +45,7 @@ def test_calc_importance_weights_with_densities():
         input_densities=input_densities,
         biasing_densities=biasing_dist_densities)
 
-    assert (expected_weights == weights).all()
+    np.testing.assert_array_almost_equal(expected_weights, weights)
 
 
 def test_find_failure_indicators_with_threshold():
@@ -53,7 +54,8 @@ def test_find_failure_indicators_with_threshold():
 
     failure_indicators = mIS._find_failure_indicators(outputs)
 
-    assert (failure_indicators == np.array([1, 1, 1, 0, 0, 1])).all()
+    np.testing.assert_array_almost_equal(failure_indicators,
+                                         np.array([1, 1, 1, 0, 0, 1]))
 
 
 def test_find_failure_indicators_with_limit_state_function():
@@ -65,7 +67,8 @@ def test_find_failure_indicators_with_limit_state_function():
 
     failure_indicators = mIS._find_failure_indicators(outputs)
 
-    assert (failure_indicators == np.array([1, 1, 1, 0, 0, 1])).all()
+    np.testing.assert_array_almost_equal(failure_indicators,
+                                         np.array([1, 1, 1, 0, 0, 1]))
 
 
 def test_mfis_estimate_is_correct(mocker):
@@ -88,22 +91,23 @@ def test_mfis_estimate_is_correct(mocker):
     expected_mfis_estimate = np.sum(np.delete(weights, 0))/n_samples
     dummy_inputs = np.ones((n_samples, 3))
     dummy_outputs = np.concatenate([np.ones((1,)), np.zeros((n_samples-1,))])
-    mfis_estimate = mIS.mfis_estimate(dummy_inputs, dummy_outputs)
+    mfis_estimate = mIS.get_failure_prob_estimate(dummy_inputs, dummy_outputs)
+    
     np.testing.assert_almost_equal(expected_mfis_estimate, mfis_estimate[0])
 
 
 def test_mfis_estimate_without_distributions(mocker):
     n_samples = 10
     input_densities = 1/np.array(range(100, 100 + n_samples))
-    bias_densities = np.ones((n_samples, 1))
-
+    bias_densities = np.ones((n_samples, ))
+    dummy_importance_weights = input_densities/bias_densities
     mIS = MultiFidelityIS(limit_state=0.5)
 
     expected_mfis_estimate = np.mean(input_densities)
-    mfis_estimate = mIS.mfis_estimate(inputs=np.ones((n_samples, 3)),
-                                      outputs=np.zeros((n_samples,)),
-                                      input_densities=input_densities,
-                                      biasing_densities=bias_densities)
+    mfis_estimate = mIS.get_failure_prob_estimate(
+        inputs=np.ones((n_samples, 3)), outputs=np.zeros((n_samples,)),
+        importance_weights=dummy_importance_weights)
+    
     np.testing.assert_almost_equal(expected_mfis_estimate, mfis_estimate[0])
 
 
@@ -118,7 +122,8 @@ def test_mfis_estimate_raises_error_no_bias_dist(mocker):
     dummy_outputs = np.zeros((num_inputs,))
 
     with pytest.raises(ValueError):
-        mIS.mfis_estimate(inputs=dummy_inputs, outputs=dummy_outputs)
+        mIS.get_failure_prob_estimate(inputs=dummy_inputs,
+                                      outputs=dummy_outputs)
 
 
 def test_mfis_estimate_raises_error_no_input_dist(mocker):
@@ -132,4 +137,5 @@ def test_mfis_estimate_raises_error_no_input_dist(mocker):
     dummy_outputs = np.zeros((num_inputs,))
 
     with pytest.raises(ValueError):
-        mIS.mfis_estimate(inputs=dummy_inputs, outputs=dummy_outputs)
+        mIS.get_failure_prob_estimate(inputs=dummy_inputs,
+                                      outputs=dummy_outputs)
