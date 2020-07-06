@@ -54,8 +54,9 @@ class BiasingDistribution(InputDistribution):
             covariance_type=POSSIBLE_COVARIANCES,
             min_failures=3, max_sample_batches=10):
         """
-        Fits a Gaussian Mixture Models to a set of inputs from which the
-        trained surrogate predicts will result in failures. Uses
+        Draws n_samples inputs from the input distribution, makes output
+        predictions with the surrogate, and determines the failure inputs.
+        Multiple Gaussian mixture models are fit to the failure inputs. Uses
         cross-validation for various numbers of clusters and/or covariance
         types. Assigns the mixture model with the highest average
         log-likelihood to the attribute 'mixture_model_'.
