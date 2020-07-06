@@ -1,7 +1,7 @@
 """
 The :mod:'mfis.multifidelity_importance_sampling' calculates an unbiased
 estimator for the failure probability based on samples from a high-fidelity
-model. The samples' inputs have probability densities from the original
+model. The samples' inputs must have probability densities from the original
 input distribution and a biasing distribution.
 
 @author:    D. Austin Cole <david.a.cole@nasa.gov>
@@ -21,18 +21,18 @@ class MultiFidelityIS:
 
     Parameters
     ----------
-    limit_state: float, int, or functionl
+    limit_state : float, int, or function
         A scalar or function applied to the response(s) that distinguishes
         failures from non-failures. If a scalar is provided, outputs less than
         the limit state are considered failures. If a function is provided,
         values of the function less than zero are considered failures.
 
-    input_distribution: instance of a probability distribution; optional
+    input_distribution : instance of a probability distribution; optional
         A distribution of one or more random variables that reflects the
         distribution of the input(s). Should have InputDistribution as it's
         base class. The default is None.
 
-    biasing_distribution: instance of a probability distribution; optional
+    biasing_distribution : instance of a probability distribution; optional
         A distribution of one of more random variables that reflects the
         biased distribution of the input(s). Usually, an instance of
         BiasingDistribution. Should have InputDistribution as it's
@@ -56,7 +56,7 @@ class MultiFidelityIS:
         Parameters
         ----------
         inputs : array
-            An array of inputs used to evaluate the high-fidelity model
+            An array of inputs used to evaluate the high-fidelity model.
 
         Raises
         ------
@@ -83,16 +83,18 @@ class MultiFidelityIS:
     def get_failure_prob_estimate(self, inputs, outputs,
                                   importance_weights=None):
         """
-        Calculates the probability of failure probability estimate.
+        Calculates the probability of failure estimate.
 
         Parameters
         ----------
         inputs : array
             An n_samples by d array of inputs used to evaluate the
-            high-fidelity model
+            high-fidelity model.
+
         outputs : array
             An 2D array with n_samples rows that contains the outputs from the
-            high-fidelity model
+            high-fidelity model.
+
         importance_weights : array; optional
             A 1D array of length n_samples that contains the importance weights
             (input density / biasing density) of the inputs. The default
@@ -103,6 +105,7 @@ class MultiFidelityIS:
         probability_of_failure : float
             The mean estimate of the probabilty of the input resulting in a
             failure output from the high-fidelity model.
+
         rmse : float
             The root mean squared error of the probability of failure estimate.
         """

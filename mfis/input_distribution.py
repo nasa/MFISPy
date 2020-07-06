@@ -1,5 +1,5 @@
 """
-The :mod:'mfis.input_distribution' hold the Abstract Base Class for an
+The :mod:'mfis.input_distribution' holds the Abstract Base Class for an
 input distribution
 
 @author:    D. Austin Cole <david.a.cole@nasa.gov>
@@ -24,30 +24,30 @@ class InputDistribution(metaclass=ABCMeta):
         Parameters
         ----------
         n_samples : int
-            Number of samples to draw
+            The number of samples to draw.
 
         Returns
         -------
-        samples: array
+        samples : array
             An n_samples by d (number of input dimensions) array of sample
-            inputs from the Input Distribution
+            inputs from the Input Distribution.
         """
 
 
     @abstractmethod
     def evaluate_pdf(self, samples):
         """
-        Evaluates the probability density function of the distribution
+        Evaluates the probability density function of the distribution.
 
         Parameters
         ----------
         samples : array
-            An n_samples by d array of sample inputs
+            An n_samples by d array of sample inputs.
 
         Returns
         -------
         densities : array
             The probability densities of each sample from the Input
-            distribution's pdf
+            distribution's pdf.
 
         """

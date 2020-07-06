@@ -22,7 +22,7 @@ class BiasingDistribution(InputDistribution):
 
     Parameters
     ----------
-    trained_surrogate : model that contained a .fit call; optional
+    trained_surrogate : a model fit that contains a .perdict call; optional
         A surrogate model that is trained to a series of inputs, outputs
         from a high-fidelity model. The default is None.
 
@@ -37,9 +37,6 @@ class BiasingDistribution(InputDistribution):
         A distribution of one or more random variables that reflects the
         distribution of the input(s). Should have InputDistribution as it's
         base class. The default is None.
-
-    seed: int; optional
-        The seed number. The default is None.
     """
     def __init__(self, trained_surrogate=None, limit_state=None,
                  input_distribution=None):
@@ -57,27 +54,31 @@ class BiasingDistribution(InputDistribution):
             covariance_type=POSSIBLE_COVARIANCES,
             min_failures=3, max_sample_batches=10):
         """
-        Fits Gaussian Mixture Models to a set of inputs from which the trained
-        surrogate predicts will result in failures. Uses cross-validation
-        for various numbers of clusters and/or covariance types. Takes the
-        Mixture Model with the highest average log-likelihood and assigns to
-        the attribute 'mixture_model_'.
+        Fits a Gaussian Mixture Models to a set of inputs from which the
+        trained surrogate predicts will result in failures. Uses
+        cross-validation for various numbers of clusters and/or covariance
+        types. Assigns the mixture model with the highest average
+        log-likelihood to the attribute 'mixture_model_'.
 
         Parameters
         ----------
         n_samples : int
             The number of samples to be drawn from the input distribution and
             then evaluated with the trained surrogate model.
+
         max_clusters : int; optional
-            The maximum number of clusters used to train the Gaussian Mixture
-            Model. The default is 10.
+            The maximum number of clusters used to train the Gaussian mixture
+            model. The default is 10.
+
         covariance_type : str or list; optional
             One or multiple types of covariance structures to use when finding
-            the best Gaussian Mixture Model. The default is all possible types:
+            the best Gaussian mixture model. The default is all possible types:
             ['full', 'spherical', 'tied', 'diag'].
+
         min_failures : int; optional
             The minimum number of failures needed before proceeding to fit
             Gaussian Mixture Models. The default is 3.
+
         max_sample_batches : int; optional
             The maximum number of sample batches to draw. A new batch is
             drawn if the minimum number of failures is not reached from
@@ -108,9 +109,11 @@ class BiasingDistribution(InputDistribution):
         n_samples : int
             The number of samples to be drawn from the input distribution and
             then evaluated with the trained surrogate model.
+
         min_failures : int; optional
             The minimum number of failures needed before proceeding to fit
-            the Gaussian Mixture Model. The default is 3.
+            the Gaussian mixture model. The default is 3.
+
         max_sample_batches : int; optional
             The maximum number of sample batches to draw. A new batch will be
             drawn if the minimum number of failures is not reached from
@@ -157,7 +160,7 @@ class BiasingDistribution(InputDistribution):
         ----------
         n_samples : int
             The number of samples to be drawn from the input distribution and
-            then evaluated with the trained surrogate model.
+            evaluated with the trained surrogate model.
 
         Returns
         -------
@@ -230,23 +233,25 @@ class BiasingDistribution(InputDistribution):
     def fit_from_failed_inputs(self, failed_inputs, max_clusters=10,
                                covariance_type=POSSIBLE_COVARIANCES):
         """
-        Fits a series of Gaussian Mixture Models to a set of inputs that
+        Fits a series of Gaussian mixture models to a set of inputs that
         correspond to predictions in the failure region. Uses cross-validation
-        for various numbers of clusters and/or covariance types. Takes the
-        Mixture Model with the highest average log-likelihood and assigns to
-        the attribute 'mixture_model_'.
+        for various numbers of clusters and/or covariance types. Assigns the
+        mixture model with the highest average log-likelihood to the attribute
+        'mixture_model_'.
 
         Parameters
         ----------
         failed_inputs : array
             The set of inputs from the input distribution that have
             predictions in the failure region.
+
         max_clusters : int; optional
-            The maximum number of clusters used to train the Gaussian Mixture
-            Model. The default is 10.
+            The maximum number of clusters used to train the Gaussian mixture
+            model. The default is 10.
+
         covariance_type : str or list; optional
             One or multiple types of covariance structures to use when finding
-            the best Gaussian Mixture Model. The default is all possible types:
+            the best Gaussian mixture model. The default is all possible types:
             ['full', 'spherical', 'tied', 'diag'].
 
         Returns
@@ -264,7 +269,7 @@ class BiasingDistribution(InputDistribution):
 
     def _check_covariance_types_are_valid(self, covariance_type):
         if isinstance(covariance_type, (list, tuple)):
-            for i, covar_type in enumerate(covariance_type):             
+            for i, covar_type in enumerate(covariance_type):
                 self._check_covariance_type_is_valid(covar_type)
         else:
             self._check_covariance_type_is_valid(covariance_type)
@@ -303,7 +308,7 @@ class BiasingDistribution(InputDistribution):
     @_check_bias_distribution_exists_decorator
     def draw_samples(self, n_samples):
         """
-        Draws random samples from the Gaussian Mixture Model.
+        Draws random samples from the Gaussian mixture model.
 
         Parameters
         ----------
@@ -314,7 +319,7 @@ class BiasingDistribution(InputDistribution):
         -------
         samples : array
             An n_samples by d array of sample inputs from the Gaussian
-            Mixture Model
+            Mixture Model.
         """
         input_samples = self.mixture_model_.sample(n_samples)[0]
 
@@ -324,8 +329,8 @@ class BiasingDistribution(InputDistribution):
     @_check_bias_distribution_exists_decorator
     def evaluate_pdf(self, samples):
         """
-        Evaluates the probability density function of the Gaussian Mixture
-        Model for a set of samples.
+        Evaluates the probability density function of the Gaussian mixture
+        model for a set of samples.
 
         Parameters
         ----------
@@ -336,7 +341,7 @@ class BiasingDistribution(InputDistribution):
         -------
         samples_densities : array
             The probability densities of each of the inputs based on the
-            Gaussian Mixture Model.
+            Gaussian mixture model.
         """
         samples_densities = self._evaluate_mixture_model_pdf(samples)
 
