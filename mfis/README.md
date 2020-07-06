@@ -5,7 +5,8 @@
 
 ## Parameters:
 * None
-
+## Attributes:
+* None
 ## Methods:
 * **draw_samples**(*self, n_samples*)
 	* Performs independent random draws from the distribution
@@ -21,6 +22,8 @@
 
 ## Parameters:
 * **distributions**: a list of instances of continuous distributions from the *scipy.stats* library.
+## Attributes:
+* None
 ## Methods:
 * **draw_samples**(*self, n_samples*)
 	* Draws an array of *n_samples* by length of *distributions* from the various marginal input distributions
@@ -37,6 +40,8 @@
 ## Parameters:
 * **mean**: an array of means of the distribution
 * **cov**: a square 2D array that consists of the covariance matrix. The matrix should have the same length as *mean* and be positive-definite
+## Attributes: 
+* None
 ## Methods:
 * **draw_samples**(*self, n_samples*)
 	* Draws and returns an array of *n_samples* from a multivariate normal distribution
@@ -54,6 +59,8 @@
 * **trained_surrogate**: *optional* fit surrogate model that includes a .predict function
 * **limit_state**: *optional* attribute that is either a scalar or function (applied to the outputs to determine failures)
 * **input_distribution**: *optional* instance of a probability distribution. Represents the distribution of the inputs for the process. Must have InputDistribution as it's abstract base class
+## Attributes:
+* **mixture_model_**: the fitted Gaussian mixture model. An instance of *sklearn.mixture.GaussianMixture* 
 ## Methods:
 * **draw_samples**(*self, n_samples*) 
 	* Draws random samples from the biasing distribution (Gaussian mixture model)
@@ -98,6 +105,8 @@
 * **limit_state**: *optional* attribute that is either a scalar or function (applied to the outputs)
 * **input_distribution**: *optional* attribute that contains the distribution of the inputs; has InputDistribution as it's abstract base class
 * **biasing_distribution**: *optional* attribute that contains the biasing distribution of the inputs; an instance of BiasingDist
+## Attributes:
+* None
 ## Methods:
 * **calc_importance_weights**(*self, inputs*)
 	* Calculates the probability densities of the inputs from the input and biasing distributions and returns their ratio (importance weights)
