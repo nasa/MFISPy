@@ -1,7 +1,7 @@
 # InputDistribution class:
 > An abstract base class for a probability distribution of input variables. The distribution is characterized by performing two functions: 
-> > 1) drawing a number of random samples from the distribution, and 
-> > 2) evaluating the distribution's density for a set of samples
+> > 1) draw_samples: drawing a number of random samples from the distribution 
+> > 2) evaluate_pdf: evaluating the distribution's density for a set of samples
 
 ## Parameters:
 * None
@@ -53,30 +53,8 @@
 ## Parameters:
 * **trained_surrogate**: *optional* fit surrogate model that includes a .predict function
 * **limit_state**: *optional* attribute that is either a scalar or function (applied to the outputs to determine failures)
-* **input_distribution**: *optional* instance of a probability distribution. REpresents the distribution of the inputs for the process. Must have InputDistribution as it's abstract base class
+* **input_distribution**: *optional* instance of a probability distribution. Represents the distribution of the inputs for the process. Must have InputDistribution as it's abstract base class
 ## Methods:
-* **fit**(*self, n_samples, max_clusters = 10, covariance_type =['diag','full','spherical','tied'], min_failures = 3, max_sample_batches = 10*)
-	* Fits a Gaussian mixture model based on a set of inputs evaluated by a surrogate model that produced failures based on the limit state function.
-	* n_samples: number of samples to draw from the input distribution to then be evaluated by the surrogate model
-	* max_clusters: maximum number of clusters to fit in the Gaussian mixture model
-	* covariance_type: a string or list of the covariance structures to evaluate when fitting the Gaussian mixture model. Possible inputs include: *diag, full, spherical, and tied*. For more information see the documentation for *sklearn.mixture.GaussianMixture*
-	* min_failures: a minimum number of failures that must be found before trying to fit the Gaussian mixture model. 
-	* max_sample_batches: a maximum number of sample batches of size *n_samples* that will be evaluated with the surrogate model in order to find at least *min_failures*.
-* **get_m_failed_inputs_from_surrogate_draws**(*self, n_samples, min_failures = 3, max_sample_batches = 10*) 
-	* Draws natches of *n_samples* from the input distribution, predicts the outputs using the surrogate model, and determines which outputs are failures. Batches are drawn until *min_failures* are found or *max_sample_batches* is reached.
-	* n_samples: number of samples to draw from the input distribution to then be evaluated by the surrogate model
-	* min_failures: a minimum number of failures that must be found before trying to fit the Gaussian mixture model.
-	* max_sample_batches: a maximum number of samples of size *n_samples* that will be evaluated with the surrogate model in order to find at least *min_failures*.
-	* **returns**: array of at least *min_failures* inputs from the input distribution that have surrogate predictions in the failure region
-* **get_failed_inputs_from_surrogate_draws**(*self, n_samples*)
-	* Draws a set of samples from the input distribution, predicts the outputs using the surrogate model, and determines the inputs that correspond to the outputs in the failure region.
-	* n_samples: number of samples to draw from the input distribution to then be evaluated by the surrogate model
-	* **returns**: array of inputs from the input distribution that have surrogate predictions in the failure region
-* **fit_from_failed_inputs**(*self, failed_inputs, max_clusters = 10, covariance_type = ['diag','full','spherical','tied']*) 
-	* Fits a series of Gaussian mixture models to a set of inputs that correspond to predictions in the failure region. Uses cross-validation for various numbers of clusters and/or covariance types. Assigns the mixture model with the highest average log-likelihood to the attribute 'mixture_model_'.
-	* failed_inputs: a set of inputs assumed to produce failures based on the limit state function
-	* max_clusters: maximum number of clusters to fit in the Gaussian mixture model
-	* covariance_type: a string or list of the covariance structures to evaluate when fitting the Gaussian mixture model. Possible inputs include: *diag, full, spherical, and tied*. For more information see the documentation for *sklearn.mixture.GaussianMixture*
 * **draw_samples**(*self, n_samples*) 
 	* Draws random samples from the biasing distribution (Gaussian mixture model)
 	* n_samples: number of samples to draw from the biasing distribution
@@ -85,12 +63,35 @@
 	* Evaluates and returns the probability densities of the samples provided in the biasing distribution
 	* samples: the set of inputs for which probability densities are desired
 	* **returns**: array of the probability densities of each of the inputs based on the mixture model
-* **save**(*self, filename*)
-	* Saves the attribute of the BiasingDistribution instance to a file that can later be loaded
-	* filename: file pathname to place the saved object
+* **fit**(*self, n_samples, max_clusters = 10, covariance_type =['diag','full','spherical','tied'], min_failures = 3, max_sample_batches = 10*)
+	* Draws *n_samples* inputs from the input distribution, generates output predictions with the surrogate, and determines the failure inputs. Multiple Gaussian mixture models are fit to the failure inputs. Uses cross-validation over mixture models with various numbers of clusters and/or covariance types. Assignes the mixture model with the highest average log-likelihood to the attribution 'mixture_model_'.
+	* n_samples: number of samples to draw from the input distribution to then be evaluated by the surrogate model
+	* max_clusters: maximum number of clusters to fit in the Gaussian mixture model
+	* covariance_type: a string or list of the covariance structures to evaluate when fitting the Gaussian mixture model. Possible inputs include: *diag, full, spherical, and tied*. For more information see the documentation for *sklearn.mixture.GaussianMixture*
+	* min_failures: a minimum number of failures that must be found before trying to fit the Gaussian mixture model. 
+	* max_sample_batches: a maximum number of sample batches of size *n_samples* that will be evaluated with the surrogate model in order to find at least *min_failures*.
+* **fit_from_failed_inputs**(*self, failed_inputs, max_clusters = 10, covariance_type = ['diag','full','spherical','tied']*) 
+	* Fits a series of Gaussian mixture models to a set of inputs that correspond to predictions in the failure region. Uses cross-validation for various numbers of clusters and/or covariance types. Assigns the mixture model with the highest average log-likelihood to the attribute 'mixture_model_'.
+	* failed_inputs: a set of inputs assumed to produce failures based on the limit state function
+	* max_clusters: maximum number of clusters to fit in the Gaussian mixture model
+	* covariance_type: a string or list of the covariance structures to evaluate when fitting the Gaussian mixture model. Possible inputs include: *diag, full, spherical, and tied*. For more information see the documentation for *sklearn.mixture.GaussianMixture*
+* **get_failed_inputs_from_surrogate_draws**(*self, n_samples*)
+	* Draws a set of samples from the input distribution, predicts the outputs using the surrogate model, and determines the inputs that correspond to the outputs in the failure region.
+	* n_samples: number of samples to draw from the input distribution to then be evaluated by the surrogate model
+	* **returns**: array of inputs from the input distribution that have surrogate predictions in the failure region
+* **get_m_failed_inputs_from_surrogate_draws**(*self, n_samples, min_failures = 3, max_sample_batches = 10*) 
+	* Draws batches of *n_samples* from the input distribution, predicts the outputs using the surrogate model, and determines which outputs are failures. Batches are drawn until *min_failures* are found or *max_sample_batches* is reached.
+	* n_samples: number of samples to draw from the input distribution to then be evaluated by the surrogate model
+	* min_failures: a minimum number of failures that must be found before trying to fit the Gaussian mixture model.
+	* max_sample_batches: a maximum number of samples of size *n_samples* that will be evaluated with the surrogate model in order to find at least *min_failures*.
+	* **returns**: array of at least *min_failures* inputs from the input distribution that have surrogate predictions in the failure region
 * **load**(*self, filename*)
 	* Loads the attributes of a previously saved BiasingDistribution class into the current class
 	* filename: file pathname where the object is located
+* **save**(*self, filename*)
+	* Saves the attribute of the BiasingDistribution instance to a file that can later be loaded
+	* filename: file pathname to place the saved object
+
 # MultiFidelityIS class:
 > Uses an input distribution, biasing distribution, and high-fidelity inputs and outputs to estimate the probability of failure based on a limit state function
 ## Parameters:
