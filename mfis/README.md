@@ -1,5 +1,7 @@
 # InputDistribution class:
-> An abstract base class for a probability distribution of input variables. The distribution is characterized by performing two functions: 1) drawing a number of random samples from the distribution, and 2) evaluating the distribution's density for a set of samples
+> An abstract base class for a probability distribution of input variables. The distribution is characterized by performing two functions: 
+> > 1) drawing a number of random samples from the distribution, and 
+> > 2) evaluating the distribution's density for a set of samples
 
 ## Parameters:
 * None
