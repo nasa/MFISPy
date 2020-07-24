@@ -42,13 +42,13 @@ class MultiFidelityIS:
                   biasing_distribution=None):
         self._limit_state = limit_state
         self._input_distribution = input_distribution
-        if isinstance(biasing_distribution, InputDistribution):
-            self._biasing_distribution = biasing_distribution
-        else:
-            self._biasing_distribution = None
+        # if isinstance(biasing_distribution, InputDistribution):
+        self._biasing_distribution = biasing_distribution
+        # else:
+        #     self._biasing_distribution = None
 
 
-    def calc_importance_weights(self, inputs):
+    def calc_importance_weights(self, inputs, only_nonzero_weights=False):
         """
         Calculates the importance weights of each input based on the ratio of
         probability densities between the input and biasing distributions.
@@ -75,9 +75,19 @@ class MultiFidelityIS:
             raise ValueError("Probability distributions are not supplied.")
 
         input_density = self._input_distribution.evaluate_pdf(inputs)
-        mm_density = self._biasing_distribution.evaluate_pdf(inputs)
+        bd_density = self._biasing_distribution.evaluate_pdf(inputs)
+        if only_nonzero_weights:
+            nonzero_density_ind = (input_density > 0).flatten()
+            input_nonzero = input_density[nonzero_density_ind]
 
-        return input_density.flatten()/mm_density.flatten()
+            bd_nonzero = bd_density[nonzero_density_ind]
+            
+            log_import_weights = np.log(input_nonzero) - np.log(bd_nonzero)
+            
+            return np.exp(log_import_weights), nonzero_density_ind
+        
+        else:
+            return input_density.flatten()/bd_density.flatten()     
 
 
     def get_failure_prob_estimate(self, inputs, outputs,
@@ -110,15 +120,20 @@ class MultiFidelityIS:
             The root mean squared error of the probability of failure estimate.
         """
         if importance_weights is None:
-            importance_weights = self.calc_importance_weights(inputs)
+            importance_weights, nonzero_indices = \
+                self.calc_importance_weights(inputs, only_nonzero_weights=True)
 
-        failure_indicators = self._find_failure_indicators(outputs)
-        failure_weights = importance_weights * failure_indicators
+            failure_indicators = \
+                self._find_failure_indicators(outputs[nonzero_indices])
+        else: 
+            failure_indicators = self._find_failure_indicators(outputs) 
+        failure_weights = \
+            importance_weights * failure_indicators
 
         probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
         sqaured_errors = (failure_weights-probability_of_failure)**2
         rmse = np.sqrt(np.mean(sqaured_errors)/len(inputs))
-
+        
         return probability_of_failure, rmse
 
 

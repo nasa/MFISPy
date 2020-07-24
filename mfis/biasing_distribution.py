@@ -45,7 +45,7 @@ class BiasingDistribution(InputDistribution):
         self._limit_state = limit_state
         self._input_distribution = input_distribution
         if input_distribution is not None:
-            self._input_dim = input_distribution.draw_samples(1).shape[1]
+            self._input_dim = input_distribution.draw_samples(2).shape[1]
         self._surrogate_inputs = None
         self.mixture_model_ = None
 
