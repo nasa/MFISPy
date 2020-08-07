@@ -76,18 +76,17 @@ class MultiFidelityIS:
 
         input_density = self._input_distribution.evaluate_pdf(inputs)
         bd_density = self._biasing_distribution.evaluate_pdf(inputs)
-        if only_nonzero_weights:
-            nonzero_density_ind = (input_density > 0).flatten()
-            input_nonzero = input_density[nonzero_density_ind]
+        importance_weights = np.zeros((inputs.shape[0]))
 
-            bd_nonzero = bd_density[nonzero_density_ind]
+        nonzero_density_ind = (input_density > 0).flatten()
+        input_nonzero = input_density[nonzero_density_ind]
+        bd_nonzero = bd_density[nonzero_density_ind]
             
-            log_import_weights = np.log(input_nonzero) - np.log(bd_nonzero)
-            
-            return np.exp(log_import_weights), nonzero_density_ind
+        log_import_weights = np.log(input_nonzero) - np.log(bd_nonzero)
+        importance_weights[nonzero_density_ind] = np.exp(log_import_weights)
         
-        else:
-            return input_density.flatten()/bd_density.flatten()     
+        return importance_weights
+
 
 
     def get_failure_prob_estimate(self, inputs, outputs,
@@ -120,19 +119,18 @@ class MultiFidelityIS:
             The root mean squared error of the probability of failure estimate.
         """
         if importance_weights is None:
-            importance_weights, nonzero_indices = \
-                self.calc_importance_weights(inputs, only_nonzero_weights=True)
-
-            failure_indicators = \
-                self._find_failure_indicators(outputs[nonzero_indices])
-        else: 
-            failure_indicators = self._find_failure_indicators(outputs) 
+            importance_weights = \
+                self.calc_importance_weights(inputs)
+ 
+        failure_indicators = self._find_failure_indicators(outputs) 
         failure_weights = \
             importance_weights * failure_indicators
 
         probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
-        sqaured_errors = (failure_weights-probability_of_failure)**2
-        rmse = np.sqrt(np.mean(sqaured_errors)/len(inputs))
+        bd_density = self._biasing_distribution.evaluate_pdf(inputs)
+        import pdb; pdb.set_trace()
+        sqaured_errors = (failure_weights-probability_of_failure)**2 * bd_density
+        rmse = np.sqrt(np.mean(sqaured_errors)/inputs.shape[0])
         
         return probability_of_failure, rmse
 
