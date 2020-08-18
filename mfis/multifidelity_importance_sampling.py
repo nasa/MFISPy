@@ -125,13 +125,11 @@ class MultiFidelityIS:
         failure_indicators = self._find_failure_indicators(outputs) 
         failure_weights = \
             importance_weights * failure_indicators
-
         probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
-        bd_density = self._biasing_distribution.evaluate_pdf(inputs)
-        import pdb; pdb.set_trace()
-        sqaured_errors = (failure_weights-probability_of_failure)**2 * bd_density
-        rmse = np.sqrt(np.mean(sqaured_errors)/inputs.shape[0])
         
+        squared_errors = (failure_weights-probability_of_failure)**2
+        rmse = np.sqrt(np.mean(squared_errors)/inputs.shape[0])
+
         return probability_of_failure, rmse
 
 
