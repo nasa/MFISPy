@@ -48,7 +48,7 @@ class MultiFidelityIS:
         #     self._biasing_distribution = None
 
 
-    def calc_importance_weights(self, inputs, only_nonzero_weights=False):
+    def calc_importance_weights(self, inputs):
         """
         Calculates the importance weights of each input based on the ratio of
         probability densities between the input and biasing distributions.
