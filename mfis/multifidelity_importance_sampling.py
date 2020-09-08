@@ -80,8 +80,7 @@ class MultiFidelityIS:
 
         nonzero_density_ind = (input_density > 0).flatten()
         input_nonzero = input_density[nonzero_density_ind]
-        bd_nonzero = bd_density[nonzero_density_ind]
-            
+        bd_nonzero = bd_density[nonzero_density_ind] 
         log_import_weights = np.log(input_nonzero) - np.log(bd_nonzero)
         importance_weights[nonzero_density_ind] = np.exp(log_import_weights)
         
@@ -128,7 +127,7 @@ class MultiFidelityIS:
         probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
         
         squared_errors = (failure_weights-probability_of_failure)**2
-        rmse = np.sqrt(np.mean(squared_errors)/inputs.shape[0])
+        rmse = np.sqrt(np.sum(squared_errors)/(inputs.shape[0]-1)/inputs.shape[0])
 
         return probability_of_failure, rmse
 
