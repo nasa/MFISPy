@@ -140,7 +140,7 @@ class BiasingDistribution(InputDistribution):
             new_fail_inputs = \
                 self.get_failed_inputs_from_surrogate_draws(n_samples)
 
-            failure_inputs = np.append(failure_inputs, new_fail_inputs, axis=0)
+            failure_inputs = np.vstack(failure_inputs, new_fail_inputs, axis=0)
 
             batches = batches + 1
 

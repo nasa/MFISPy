@@ -39,13 +39,11 @@ class MultiFidelityIS:
         base class. The default is None.
     """
     def  __init__(self, limit_state, input_distribution=None,
-                  biasing_distribution=None):
+                  biasing_distribution=None, bounds=None):
         self._limit_state = limit_state
         self._input_distribution = input_distribution
-        # if isinstance(biasing_distribution, InputDistribution):
         self._biasing_distribution = biasing_distribution
-        # else:
-        #     self._biasing_distribution = None
+        self._bounds = bounds
 
 
     def calc_importance_weights(self, inputs):
@@ -121,7 +119,7 @@ class MultiFidelityIS:
             importance_weights = \
                 self.calc_importance_weights(inputs)
  
-        failure_indicators = self._find_failure_indicators(outputs) 
+        failure_indicators = self._find_failure_indicators(inputs, outputs) 
         failure_weights = \
             importance_weights * failure_indicators
         probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
@@ -158,10 +156,22 @@ class MultiFidelityIS:
         return importance_weights
 
 
-    def _find_failure_indicators(self, outputs):
+    def _find_failure_indicators(self, inputs, outputs):
         if isfunction(self._limit_state):
             failure_indicators = (self._limit_state(outputs) < 0)*1
         else:
             failure_indicators = (outputs < self._limit_state)*1
 
+        if self._bounds is not None:
+            inside_bounds_indicators = \
+                self._data_within_bounds_indicators(inputs, self._bounds)
+            failure_indicators *= inside_bounds_indicators.astype(int)
         return failure_indicators
+    
+    
+    def _data_within_bounds_indicators(self, data, bounds):
+        inside_bounds_indicators = np.ones((len(data),))
+        for i in range(data.shape[1]):
+            inside_bounds_indicators *= 1*(data[:,i] > bounds[i][0])
+            inside_bounds_indicators *= 1*(data[:,i] < bounds[i][1])
+        return inside_bounds_indicators
