@@ -100,9 +100,9 @@
 	* filename: file pathname to place the saved object
 
 # MultiFidelityIS class:
-> Uses an input distribution, biasing distribution, and high-fidelity inputs and outputs to estimate the probability of failure based on a limit state function
+> Uses an input distribution, biasing distribution, and high-fidelity inputs and outputs to estimate the probability of failure based on a limit state
 ## Parameters:
-* **limit_state**: *optional* attribute that is either a scalar or function (applied to the outputs)
+* **limit_state**: *optional* attribute that is either a scalar or function (applied to the outputs); if a scalar, failures are identified when outputs exceed the limit state; if a function, failures are classified when the function's value exceeds zero
 * **input_distribution**: *optional* attribute that contains the distribution of the inputs; has InputDistribution as it's abstract base class
 * **biasing_distribution**: *optional* attribute that contains the biasing distribution of the inputs; an instance of BiasingDist
 ## Attributes:
