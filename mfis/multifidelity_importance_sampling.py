@@ -23,9 +23,9 @@ class MultiFidelityIS:
     ----------
     limit_state : float, int, or function
         A scalar or function applied to the response(s) that distinguishes
-        failures from non-failures. If a scalar is provided, outputs less than
+        failures from non-failures. If a scalar is provided, outputs greater than
         the limit state are considered failures. If a function is provided,
-        values of the function less than zero are considered failures.
+        values of the function greater than zero are considered failures.
 
     input_distribution : instance of a probability distribution; optional
         A distribution of one or more random variables that reflects the
@@ -81,7 +81,7 @@ class MultiFidelityIS:
         bd_nonzero = bd_density[nonzero_density_ind] 
         log_import_weights = np.log(input_nonzero) - np.log(bd_nonzero)
         importance_weights[nonzero_density_ind] = np.exp(log_import_weights)
-        
+
         return importance_weights
 
 
@@ -122,6 +122,7 @@ class MultiFidelityIS:
         failure_indicators = self._find_failure_indicators(inputs, outputs) 
         failure_weights = \
             importance_weights * failure_indicators
+        
         probability_of_failure = np.sum(failure_weights)/inputs.shape[0]
         
         squared_errors = (failure_weights-probability_of_failure)**2
@@ -158,9 +159,9 @@ class MultiFidelityIS:
 
     def _find_failure_indicators(self, inputs, outputs):
         if isfunction(self._limit_state):
-            failure_indicators = (self._limit_state(outputs) < 0)*1
+            failure_indicators = (self._limit_state(outputs) > 0)*1
         else:
-            failure_indicators = (outputs < self._limit_state)*1
+            failure_indicators = (outputs > self._limit_state)*1
 
         if self._bounds is not None:
             inside_bounds_indicators = \

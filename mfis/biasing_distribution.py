@@ -8,6 +8,7 @@ the inputs that is biased towards the failure region.
 from inspect import isfunction
 import pickle
 import numpy as np
+import scipy.stats as ss
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import GridSearchCV
 from mfis.input_distribution import InputDistribution
@@ -139,8 +140,8 @@ class BiasingDistribution(InputDistribution):
 
             new_fail_inputs = \
                 self.get_failed_inputs_from_surrogate_draws(n_samples)
-
-            failure_inputs = np.vstack(failure_inputs, new_fail_inputs, axis=0)
+            
+            failure_inputs = np.vstack((failure_inputs, new_fail_inputs))
 
             batches = batches + 1
 
@@ -322,7 +323,23 @@ class BiasingDistribution(InputDistribution):
             An n_samples by d array of sample inputs from the Gaussian
             Mixture Model.
         """
-        input_samples = self.mixture_model_.sample(n_samples)[0]
+        if len(self.mixture_model_.means_) == 1:
+            if self.mixture_model_.covariance_type == 'diag':
+                cov_mat = np.diag(self.mixture_model_.covariances_.flatten())
+            elif self.mixture_model_.covariance_type == 'spherical':
+                cov_mat = np.diag(self.mixture_model_.covariances_*np.ones((
+                    self.mixture_model_.means_.shape[1],)))
+            elif self.mixture_model_.covariance_type == 'full': 
+                cov_mat = self.mixture_model_.covariances_[0]
+            else:
+                cov_mat = self.mixture_model_.covariances_
+                
+            mvn = ss.multivariate_normal(
+                mean=self.mixture_model_.means_.flatten(),
+                cov=cov_mat)
+            input_samples = mvn.rvs(n_samples)
+        else:
+            input_samples = self.mixture_model_.sample(n_samples)[0]
 
         return input_samples
 

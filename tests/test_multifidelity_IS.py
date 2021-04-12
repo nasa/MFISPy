@@ -20,7 +20,7 @@ def test_calc_importance_weights(mocker):
 
     expected_weights = input_densities/biasing_dist_densities
 
-    weights = importance_sampling.calc_importance_weights(1)
+    weights = importance_sampling.calc_importance_weights(np.ones((3,1)))
 
     np.testing.assert_array_almost_equal(expected_weights, weights)
 
@@ -50,25 +50,27 @@ def test_calc_importance_weights_with_densities():
 
 def test_find_failure_indicators_with_threshold():
     outputs = np.array([2, 3, -4, 6, 8, 1])
+    inputs = np.ones((7, 2))
     mIS = MultiFidelityIS(limit_state=4)
 
-    failure_indicators = mIS._find_failure_indicators(outputs)
+    failure_indicators = mIS._find_failure_indicators(inputs, outputs)
 
     np.testing.assert_array_almost_equal(failure_indicators,
-                                         np.array([1, 1, 1, 0, 0, 1]))
+                                         np.array([0, 0, 0, 1, 1, 0]))
 
 
 def test_find_failure_indicators_with_limit_state_function():
     outputs = np.array([2, 3, -4, 6, 8, 1])
+    inputs = np.ones((7, 2))
     def limit_state(input):
         return input - 4
 
     mIS = MultiFidelityIS(limit_state=limit_state)
 
-    failure_indicators = mIS._find_failure_indicators(outputs)
+    failure_indicators = mIS._find_failure_indicators(inputs, outputs)
 
     np.testing.assert_array_almost_equal(failure_indicators,
-                                         np.array([1, 1, 1, 0, 0, 1]))
+                                         np.array([0, 0, 0, 1, 1, 0]))
 
 
 def test_mfis_estimate_is_correct(mocker):
@@ -79,18 +81,18 @@ def test_mfis_estimate_is_correct(mocker):
     mock_input_distribution = mocker.create_autospec(InputDistribution)
     mock_input_distribution.evaluate_pdf.return_value = input_densities
 
-    biasing_dist_densities = np.ones((1, n_samples))
+    biasing_dist_densities = np.ones((n_samples, ))
     mock_bias_distribution = mocker.create_autospec(InputDistribution)
     mock_bias_distribution.evaluate_pdf.return_value = biasing_dist_densities
 
-    mIS = MultiFidelityIS(limit_state=0.5,
+    mIS = MultiFidelityIS(limit_state=-0.5,
                           biasing_distribution=mock_bias_distribution,
                           input_distribution=mock_input_distribution)
 
 
     expected_mfis_estimate = np.sum(np.delete(weights, 0))/n_samples
     dummy_inputs = np.ones((n_samples, 3))
-    dummy_outputs = np.concatenate([np.ones((1,)), np.zeros((n_samples-1,))])
+    dummy_outputs = np.concatenate([-np.ones((1,)), np.zeros((n_samples-1,))])
     mfis_estimate = mIS.get_failure_prob_estimate(dummy_inputs, dummy_outputs)
     
     np.testing.assert_almost_equal(expected_mfis_estimate, mfis_estimate[0])
@@ -101,7 +103,7 @@ def test_mfis_estimate_without_distributions(mocker):
     input_densities = 1/np.array(range(100, 100 + n_samples))
     bias_densities = np.ones((n_samples, ))
     dummy_importance_weights = input_densities/bias_densities
-    mIS = MultiFidelityIS(limit_state=0.5)
+    mIS = MultiFidelityIS(limit_state=-0.5)
 
     expected_mfis_estimate = np.mean(input_densities)
     mfis_estimate = mIS.get_failure_prob_estimate(

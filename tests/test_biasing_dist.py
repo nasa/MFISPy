@@ -5,7 +5,7 @@ from mfis import BiasingDistribution
 @pytest.fixture
 def mock_bias_dist(mocker):
     mock_surrogate = mocker.Mock()
-    failure_threshold = -0.1
+    failure_threshold = 0.1
     bias_dist = BiasingDistribution(trained_surrogate=mock_surrogate,
                                     limit_state=failure_threshold)
     return bias_dist
@@ -102,7 +102,7 @@ def test_evaluate_surrogate_runs(mocker):
                                                                dummy_samples)
     
     np.testing.assert_array_almost_equal(surrogate_samples,
-                                         np.array([-2, -1, 0]))
+                                         np.array([-2, -1, 0]).reshape((-1,1)))
 
 
 def test_find_failures_raise_error_with_no_limit_state():
@@ -228,7 +228,7 @@ def test_samples_drawn_from_mixture_model_are_correct_shape(mocker,
     return_samples = np.ones((n_samples, 3))
     mock_mixture_model.sample.return_value = [return_samples,
                                               np.zeros((n_samples, 3))]
-
+    mock_mixture_model.means_ = np.ones((2,3))
     mock_bias_dist.mixture_model_ = mock_mixture_model
 
     samples = mock_bias_dist.draw_samples(n_samples)
